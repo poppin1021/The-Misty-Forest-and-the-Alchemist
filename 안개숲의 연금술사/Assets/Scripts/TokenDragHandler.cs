@@ -19,10 +19,14 @@ public class TokenDragHandler : MonoBehaviour,
     private Vector2 dragOffset;
     private bool isDragging;
 
+    private Image sourceIcon;
+    private bool wasIconEnabled;
+
     private void Awake()
     {
         sourceButton = GetComponent<Button>();
         sourceRect = GetComponent<RectTransform>();
+        sourceIcon = transform.Find("TokenIcon").GetComponent<Image>();
     }
 
     // BagController가 버튼을 생성할 때 재료 번호, 이동 방향과 대상 영역을 연결한다.
@@ -71,6 +75,10 @@ public class TokenDragHandler : MonoBehaviour,
 
         isDragging = true;
         sourceButton.interactable = false;
+
+        // 원본의 표시 상태를 기억하고 드래그 중에는 아이콘만 숨긴다.
+        wasIconEnabled = sourceIcon.enabled;
+        sourceIcon.enabled = false;
 
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
             canvasRect, eventData.position, eventData.pressEventCamera,
@@ -129,10 +137,11 @@ public class TokenDragHandler : MonoBehaviour,
         }
     }
 
-    // 복사본을 정리하고 현재 전투 상태에 맞춰 원본 버튼의 입력을 복원한다.
+    // 드래그를 정리하고 원본의 표시와 입력 상태를 복원한다.
     private void ClearDragPreview()
     {
         isDragging = false;
+
         if (dragPreview != null)
         {
             dragPreview.SetActive(false);
@@ -140,6 +149,12 @@ public class TokenDragHandler : MonoBehaviour,
             dragPreview = null;
             previewRect = null;
         }
+
+        if (sourceIcon != null)
+        {
+            sourceIcon.enabled = wasIconEnabled;
+        }
+
         if (sourceButton != null && bagController != null)
         {
             sourceButton.interactable = bagController.CanDragTokens();
