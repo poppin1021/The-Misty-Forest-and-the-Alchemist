@@ -17,6 +17,16 @@ public class BagController : MonoBehaviour
     [SerializeField] private Button craftButton;
     [SerializeField] private GameObject preparedPotionButton;
 
+    [Header("물약 이동 연출")]
+    [SerializeField] private RectTransform potionProjectile;
+    [SerializeField] private RectTransform potionStartPoint;
+    [SerializeField] private RectTransform playerTarget;
+    [SerializeField] private RectTransform enemyTarget;
+    [SerializeField] private float potionFlightDuration = 0.45f;
+    [SerializeField] private float potionArcHeight = 100f;
+
+    private bool isPotionFlying = false;
+
     [Header("재료 아이콘")]
     [SerializeField] private Sprite redBerrySprite;
     [SerializeField] private Sprite armorLeafSprite;
@@ -42,15 +52,38 @@ public class BagController : MonoBehaviour
     [SerializeField] private float enemyAttackDelay = 0.8f;
     [SerializeField] private float enemyTurnEndDelay = 0.5f;
 
+    [Header("피격 연출")]
+    [SerializeField] private HitReactionUI playerHitReaction;
+    [SerializeField] private HitReactionUI enemyHitReaction;
+
+    [Header("적 공격 연출")]
+    [SerializeField] private AttackMotionUI enemyAttackMotion;
+
+    [Header("체력 바")]
+    [SerializeField] private Slider playerHPBar;
+    [SerializeField] private Slider enemyHPBar;
+    [SerializeField] private GameObject playerArmorFrame;
+
+    [Header("날아가는 물약 이미지")]
+    [SerializeField] private Sprite redPotionSprite;
+    [SerializeField] private Sprite tealPotionSprite;
+    [SerializeField] private Sprite yellowPotionSprite;
+    [SerializeField] private Sprite bluePotionSprite;
+
+    [Header("이미지 조합 목록")]
+    [SerializeField] private ScrollRect recipeScrollView;
+    [SerializeField] private RectTransform recipeOptionsContent;
+    [SerializeField] private RecipeOptionUI recipeOptionPrefab;
+
     // 주머니 원본과 현재 턴의 재료·물약 데이터
     // 테스트 구성: 기본 재료 9개 + 졸음가루 1개.
     private string[] bagTokens =
     {
-        "홍등열매",
+        "홍등열매", "홍등열매", "홍등열매",
         "갑각잎", "갑각잎",
         "새살꽃", "새살꽃",
-        "시듦버섯", "시듦버섯",
-        "바람씨앗", "바람씨앗",
+        "시듦버섯",
+        "바람씨앗",
         "졸음나방 날개가루"
     };
 
@@ -64,6 +97,7 @@ public class BagController : MonoBehaviour
     private int turnNumber = 1;
     private bool hasDrawn = false;
     private bool isEnemyTurn = false;
+    private bool isPaused = false;
 
     // 플레이어와 적의 전투 수치
     private int playerMaxHP = 60;
@@ -80,15 +114,133 @@ public class BagController : MonoBehaviour
     // 1. 게임 초기화와 턴 진행
     private void Start()
     {
+        GameSaveData data = GameSession.CurrentSave;
+
+        preparedPotion = null;
+        preparedPotionButton.SetActive(false);
+        bagPanel.SetActive(false);
+
+        if (potionProjectile != null)
+        {
+            potionProjectile.gameObject.SetActive(false);
+        }
+
+        if (data != null)
+        {
+            playerMaxHP = data.playerMaxHP;
+            playerHP = data.playerHP;
+
+            if (data.bagTokens != null)
+            {
+                bagTokens = (string[])data.bagTokens.Clone();
+            }
+
+            // 전투 중 저장했다면 새 턴을 시작하지 않고 그대로 복원한다.
+            if (data.hasBattleState)
+            {
+                RestoreBattleState(data);
+                return;
+            }
+        }
+
         enemyHP = enemyMaxHP;
 
         UpdateEnemyHPUI();
         UpdatePlayerStatusUI();
 
-        preparedPotionButton.SetActive(false);
-        bagPanel.SetActive(false);
-
         StartTurn();
+    }
+
+    // 손패를 다시 뽑거나 예약 효과를 발동하지 않고 저장한 상태만 복원한다.
+    private void RestoreBattleState(GameSaveData data)
+    {
+        turnNumber = data.turnNumber;
+        hasDrawn = data.hasDrawn;
+
+        playerArmor = data.playerArmor;
+
+        enemyHP = data.enemyHP;
+        enemyMaxHP = data.enemyMaxHP;
+        enemyAttackDamage = data.enemyAttackDamage;
+        enemyWeakTurns = data.enemyWeakTurns;
+
+        remainingTokens = new List<string>(
+            data.remainingTokens ?? new string[0]);
+
+        handTokens = new List<string>(
+            data.handTokens ?? new string[0]);
+
+        cauldronTokens = new List<string>(
+            data.cauldronTokens ?? new string[0]);
+
+        delayedPotions = new List<PotionData>(
+            data.delayedPotions ?? new PotionData[0]);
+
+        UpdateEnemyHPUI();
+        UpdatePlayerStatusUI();
+        RefreshHandUI();
+    }
+
+    // 일시정지한 전투를 현재 선택한 슬롯에 저장한다.
+    public bool SaveBattle(out string message)
+    {
+        if (!isPaused
+            || isEnemyTurn
+            || isPotionFlying
+            || preparedPotion != null
+            || playerHP <= 0
+            || enemyHP <= 0)
+        {
+            message = "현재는 저장할 수 없습니다.";
+            return false;
+        }
+
+        int slotNumber = GameSession.SlotNumber;
+
+        if (slotNumber < 1 || slotNumber > 3)
+        {
+            message = "타이틀에서 저장 슬롯을 선택한 후 시작해주세요.";
+            return false;
+        }
+
+        GameSaveData data = new GameSaveData();
+
+        data.sceneName = gameObject.scene.name;
+        data.hasBattleState = true;
+
+        data.playerHP = playerHP;
+        data.playerMaxHP = playerMaxHP;
+        data.playerArmor = playerArmor;
+
+        data.turnNumber = turnNumber;
+        data.hasDrawn = hasDrawn;
+
+        data.enemyHP = enemyHP;
+        data.enemyMaxHP = enemyMaxHP;
+        data.enemyAttackDamage = enemyAttackDamage;
+        data.enemyWeakTurns = enemyWeakTurns;
+
+        data.bagTokens = (string[])bagTokens.Clone();
+        data.remainingTokens = remainingTokens.ToArray();
+        data.handTokens = handTokens.ToArray();
+        data.cauldronTokens = cauldronTokens.ToArray();
+        data.delayedPotions = delayedPotions.ToArray();
+
+        if (GameSession.CurrentSave != null)
+        {
+            data.battleNumber = GameSession.CurrentSave.battleNumber;
+        }
+
+        if (!SaveSystem.Save(slotNumber, data))
+        {
+            message = "저장에 실패했습니다. Console을 확인해주세요.";
+            return false;
+        }
+
+        GameSession.SelectSave(slotNumber, data);
+
+        message = "슬롯 " + slotNumber + "에 저장했습니다.";
+        return true;
     }
 
     // 방어도 초기화 → 기본 5개 뽑기 → 예약된 물약 재발동 순서로 진행한다.
@@ -123,14 +275,25 @@ public class BagController : MonoBehaviour
         StartCoroutine(EnemyTurnRoutine());
     }
 
-    // 적 공격 전후에 기다린다. 추후 이 구간에 공격 애니메이션을 연결한다.
+    // 공격 전 대기 → 돌진과 피해 적용 → 복귀 → 다음 턴 순서로 진행한다.
     private IEnumerator EnemyTurnRoutine()
     {
         Debug.Log(turnNumber + "턴 종료");
         Debug.Log("적 턴 시작");
+
         yield return new WaitForSeconds(enemyAttackDelay);
-        EnemyTurn();
+
+        if (enemyAttackMotion != null)
+        {
+            yield return enemyAttackMotion.PlayAttack(EnemyTurn);
+        }
+        else
+        {
+            EnemyTurn();
+        }
+
         yield return new WaitForSeconds(enemyTurnEndDelay);
+
         isEnemyTurn = false;
 
         if (playerHP <= 0)
@@ -165,6 +328,11 @@ public class BagController : MonoBehaviour
 
         playerHP = Mathf.Max(0, playerHP - hpDamage);
 
+        if (hpDamage > 0 && playerHitReaction != null)
+        {
+            playerHitReaction.PlayHit();
+        }
+
         UpdatePlayerStatusUI();
         UpdateEnemyStatusUI();
 
@@ -181,7 +349,11 @@ public class BagController : MonoBehaviour
 
     private bool CanPlayerAct()
     {
-        return !isEnemyTurn && playerHP > 0 && enemyHP > 0;
+        return !isPaused
+            && !isEnemyTurn
+            && !isPotionFlying
+            && playerHP > 0
+            && enemyHP > 0;
     }
 
     // 2. 재료 뽑기
@@ -304,6 +476,7 @@ public class BagController : MonoBehaviour
             && PotionRecipes.Create(cauldronTokens) != null;
     }
 
+    // 물약을 제조한 뒤 대상에게 날려 보낸다.
     public void CraftPotion()
     {
         if (!CanCraftPotion())
@@ -311,11 +484,92 @@ public class BagController : MonoBehaviour
             return;
         }
 
+        if (potionProjectile == null
+            || potionStartPoint == null
+            || playerTarget == null
+            || enemyTarget == null)
+        {
+            Debug.LogError("물약 이동 연출의 연결 항목을 확인해주세요.");
+            return;
+        }
+
+        // 재료를 비우기 전에 사용할 물약 이미지를 결정한다.
+        Sprite selectedSprite = GetPotionSprite(cauldronTokens);
+        Image projectileImage = potionProjectile.GetComponent<Image>();
+
+        if (selectedSprite == null || projectileImage == null)
+        {
+            Debug.LogError(
+                "물약 Sprite 연결과 PotionProjectile의 Image를 확인해주세요."
+            );
+            return;
+        }
+
+        projectileImage.overrideSprite = null;
+        projectileImage.sprite = selectedSprite;
+        projectileImage.color = Color.white;
+        projectileImage.preserveAspect = true;
+
         preparedPotion = PotionRecipes.Create(cauldronTokens);
         cauldronTokens.Clear();
-        preparedPotionButton.SetActive(true);
-        Debug.Log("물약 제조 완료: " + preparedPotion.potionName);
+
+        RectTransform targetPoint =
+            preparedPotion.target == PotionTarget.Enemy
+                ? enemyTarget
+                : playerTarget;
+
+        isPotionFlying = true;
         RefreshHandUI();
+
+        StartCoroutine(FlyPotionRoutine(targetPoint));
+    }
+
+    // 물약을 곡선으로 이동시키고, 도착하면 효과를 적용한다.
+    private IEnumerator FlyPotionRoutine(RectTransform targetPoint)
+    {
+        Transform flightParent = potionProjectile.parent;
+
+        Vector3 startPosition = flightParent.InverseTransformPoint(
+            potionStartPoint.TransformPoint(potionStartPoint.rect.center)
+        );
+
+        Vector3 endPosition = flightParent.InverseTransformPoint(
+            targetPoint.TransformPoint(targetPoint.rect.center)
+        );
+
+        potionProjectile.localPosition = startPosition;
+        potionProjectile.SetAsLastSibling();
+        potionProjectile.gameObject.SetActive(true);
+
+        float duration = Mathf.Max(0.05f, potionFlightDuration);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+
+            float progress = Mathf.Clamp01(elapsed / duration);
+
+            Vector3 position = Vector3.Lerp(
+                startPosition,
+                endPosition,
+                progress
+            );
+
+            position.y +=
+                Mathf.Sin(progress * Mathf.PI) * potionArcHeight;
+
+            potionProjectile.localPosition = position;
+
+            yield return null;
+        }
+
+        potionProjectile.localPosition = endPosition;
+        potionProjectile.gameObject.SetActive(false);
+
+        // 이동 제한을 해제한 뒤 기존 물약 사용 함수를 호출한다.
+        isPotionFlying = false;
+        UsePreparedPotion(preparedPotion.target);
     }
 
     public void UsePreparedPotionOnEnemy()
@@ -368,6 +622,11 @@ public class BagController : MonoBehaviour
             enemyHP = Mathf.Max(0, enemyHP - potion.damage);
             UpdateEnemyHPUI();
             Debug.Log("적에게 피해 " + potion.damage);
+
+            if (enemyHitReaction != null)
+            {
+                enemyHitReaction.PlayHit();
+            }
 
             if (enemyHP == 0)
             {
@@ -549,9 +808,14 @@ public class BagController : MonoBehaviour
         return button;
     }
 
-    // 전투 결과·적 턴·완성 물약·조합 미리보기 순으로 표시 우선순위를 정한다.
+    // 전투 상황에 따라 이미지 목록과 상세 설명을 전환한다.
     private void UpdateRecipePreview()
     {
+        ClearRecipeOptions();
+
+        recipeText.gameObject.SetActive(true);
+        recipeScrollView.gameObject.SetActive(false);
+
         if (playerHP <= 0)
         {
             recipeText.text = "전투 패배!";
@@ -570,6 +834,12 @@ public class BagController : MonoBehaviour
             return;
         }
 
+        if (isPotionFlying)
+        {
+            recipeText.text = "물약을 사용하는 중입니다...";
+            return;
+        }
+
         if (preparedPotion != null)
         {
             recipeText.text = GetPotionDescription(preparedPotion);
@@ -584,11 +854,18 @@ public class BagController : MonoBehaviour
 
         if (cauldronTokens.Count == 1)
         {
-            recipeText.text = "기본 재료를 하나 더 넣어주세요.";
+            if (ShowSingleIngredientOptions(cauldronTokens[0]))
+            {
+                return;
+            }
+
+            recipeText.text =
+                GetSingleIngredientPreview(cauldronTokens[0]);
             return;
         }
 
-        PotionData previewPotion = PotionRecipes.Create(cauldronTokens);
+        PotionData previewPotion =
+            PotionRecipes.Create(cauldronTokens);
 
         if (previewPotion != null)
         {
@@ -599,16 +876,132 @@ public class BagController : MonoBehaviour
         if (cauldronTokens.Count == 2
             && cauldronTokens.Contains("시듦버섯"))
         {
-            recipeText.text = "시듦버섯 조합에는\n첨가제가 필요합니다.";
+            if (ShowAdditiveOptions())
+            {
+                return;
+            }
+
+            recipeText.text = GetAdditivePreview();
             return;
         }
 
         recipeText.text = "현재 제조할 수 없는 조합입니다.";
     }
 
+    // 재료 하나로 만들 수 있는 조합 목록을 보여준다.
+    private string GetSingleIngredientPreview(string ingredient)
+    {
+        string[] baseIngredients =
+        {
+        "홍등열매",
+        "갑각잎",
+        "새살꽃",
+        "시듦버섯",
+        "바람씨앗"
+    };
+
+        bool isBaseIngredient =
+            System.Array.IndexOf(baseIngredients, ingredient) >= 0;
+
+        if (!isBaseIngredient)
+        {
+            return "첨가제를 넣었습니다.\n기본 재료 2개를 추가해주세요.";
+        }
+
+        StringBuilder description = new StringBuilder();
+        description.AppendLine("추가 재료별 조합");
+        description.AppendLine();
+
+        foreach (string nextIngredient in baseIngredients)
+        {
+            List<string> ingredients = new List<string>
+        {
+            ingredient,
+            nextIngredient
+        };
+
+            PotionData potion = PotionRecipes.Create(ingredients);
+
+            if (potion != null)
+            {
+                description.AppendLine(
+                    nextIngredient + ": " + potion.potionName
+                );
+            }
+            else if (ingredients.Contains("시듦버섯"))
+            {
+                description.AppendLine(
+                    nextIngredient + ": 첨가제 필요"
+                );
+            }
+        }
+
+        return description.ToString().TrimEnd();
+    }
+
+    // 시듦버섯 조합에 추가할 첨가제와 제조 가능 여부를 보여준다.
+    private string GetAdditivePreview()
+    {
+        foreach (string ingredient in cauldronTokens)
+        {
+            bool isBaseIngredient =
+                ingredient == "홍등열매"
+                || ingredient == "갑각잎"
+                || ingredient == "새살꽃"
+                || ingredient == "시듦버섯"
+                || ingredient == "바람씨앗";
+
+            if (!isBaseIngredient)
+            {
+                return "기본 재료를 하나 더 넣어주세요.";
+            }
+        }
+
+        string[] additives =
+        {
+        "졸음나방 날개가루",
+        "허물달팽이 진액",
+        "썩은별 가시",
+        "불씨도롱뇽 비늘"
+    };
+
+        StringBuilder description = new StringBuilder();
+        description.AppendLine("추가할 첨가제");
+        description.AppendLine();
+
+        foreach (string additive in additives)
+        {
+            List<string> ingredients =
+                new List<string>(cauldronTokens);
+
+            ingredients.Add(additive);
+
+            PotionData potion = PotionRecipes.Create(ingredients);
+
+            string displayName = additive == "졸음나방 날개가루"
+                ? "졸음가루"
+                : additive;
+
+            string result = potion != null
+                ? potion.potionName
+                : "구현 예정";
+
+            description.AppendLine(displayName + ": " + result);
+        }
+
+        return description.ToString().TrimEnd();
+    }
+
     private void UpdateEnemyHPUI()
     {
-        enemyHPText.text = "HP " + enemyHP + " / " + enemyMaxHP;
+        enemyHPText.text = enemyHP + " / " + enemyMaxHP;
+
+        if (enemyHPBar != null)
+        {
+            enemyHPBar.minValue = 0;
+            enemyHPBar.maxValue = enemyMaxHP;
+            enemyHPBar.value = enemyHP;
+        }
     }
 
     private void UpdateEnemyStatusUI()
@@ -640,10 +1033,30 @@ public class BagController : MonoBehaviour
         }
     }
 
+    // 체력 숫자와 방어도 테두리를 함께 갱신한다.
     private void UpdatePlayerStatusUI()
     {
-        playerStatusText.text = "HP " + playerHP + " / " + playerMaxHP
-            + "\nARMOR " + playerArmor;
+        bool hasArmor = playerArmor > 0;
+
+        playerStatusText.text =
+            playerHP + " / " + playerMaxHP;
+
+        if (hasArmor)
+        {
+            playerStatusText.text += " (" + playerArmor + ")";
+        }
+
+        if (playerHPBar != null)
+        {
+            playerHPBar.minValue = 0;
+            playerHPBar.maxValue = playerMaxHP;
+            playerHPBar.value = playerHP;
+        }
+
+        if (playerArmorFrame != null)
+        {
+            playerArmorFrame.SetActive(hasArmor);
+        }
     }
 
     // 8. 표시용 물약 설명과 재료 색상
@@ -745,5 +1158,202 @@ public class BagController : MonoBehaviour
             default:
                 return null;
         }
+    }
+
+    // 내 턴에 물약 사용이 끝난 상태에서 일시정지할 수 있다.
+    public bool CanPauseBattle()
+    {
+        return CanPlayerAct() && preparedPotion == null;
+    }
+
+    public bool PauseBattle()
+    {
+        if (!CanPauseBattle())
+        {
+            return false;
+        }
+
+        CloseBagPanel();
+        isPaused = true;
+        RefreshHandUI();
+
+        return true;
+    }
+
+    public void ResumeBattle()
+    {
+        isPaused = false;
+        RefreshHandUI();
+    }
+
+    // 포함된 재료를 우선순위대로 검사해 물약 외형을 선택한다.
+    private Sprite GetPotionSprite(List<string> ingredients)
+    {
+        if (ingredients.Contains("홍등열매"))
+        {
+            return redPotionSprite;
+        }
+
+        if (ingredients.Contains("갑각잎"))
+        {
+            return tealPotionSprite;
+        }
+
+        if (ingredients.Contains("새살꽃")
+            || ingredients.Contains("바람씨앗"))
+        {
+            return yellowPotionSprite;
+        }
+
+        if (ingredients.Contains("시듦버섯")
+            || ingredients.Contains("졸음나방 날개가루"))
+        {
+            return bluePotionSprite;
+        }
+
+        return null;
+    }
+
+    // 이전 목록을 지우고 새 목록을 준비한다.
+    private void ClearRecipeOptions()
+    {
+        foreach (Transform child in recipeOptionsContent)
+        {
+            child.gameObject.SetActive(false);
+            Destroy(child.gameObject);
+        }
+    }
+
+    private void AddRecipeOption(
+        string ingredient,
+        string potionName,
+        string requirement = "")
+    {
+        RecipeOptionUI option = Instantiate(
+            recipeOptionPrefab,
+            recipeOptionsContent
+        );
+
+        option.Setup(
+            GetTokenSprite(ingredient),
+            potionName,
+            requirement
+        );
+    }
+
+    // 목록 크기를 계산한 뒤 맨 왼쪽부터 보여준다.
+    private void OpenRecipeOptions()
+    {
+        recipeText.gameObject.SetActive(false);
+        recipeScrollView.gameObject.SetActive(true);
+
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(
+            recipeOptionsContent
+        );
+
+        recipeScrollView.StopMovement();
+        recipeScrollView.horizontalNormalizedPosition = 0f;
+    }
+
+    // 기본 재료 하나와 함께 사용할 수 있는 재료를 표시한다.
+    private bool ShowSingleIngredientOptions(string ingredient)
+    {
+        string[] baseIngredients =
+        {
+        "홍등열매",
+        "갑각잎",
+        "새살꽃",
+        "시듦버섯",
+        "바람씨앗"
+    };
+
+        if (System.Array.IndexOf(baseIngredients, ingredient) < 0)
+        {
+            return false;
+        }
+
+        int optionCount = 0;
+
+        foreach (string nextIngredient in baseIngredients)
+        {
+            List<string> ingredients = new List<string>
+        {
+            ingredient,
+            nextIngredient
+        };
+
+            PotionData potion = PotionRecipes.Create(ingredients);
+            string requirement = "";
+
+            // 버섯 조합은 졸음가루까지 넣은 결과를 안내한다.
+            if (potion == null && ingredients.Contains("시듦버섯"))
+            {
+                ingredients.Add("졸음나방 날개가루");
+                potion = PotionRecipes.Create(ingredients);
+                requirement = "졸음가루 필요";
+            }
+
+            if (potion == null)
+            {
+                continue;
+            }
+
+            AddRecipeOption(
+                nextIngredient,
+                potion.potionName,
+                requirement
+            );
+
+            optionCount++;
+        }
+
+        if (optionCount == 0)
+        {
+            return false;
+        }
+
+        OpenRecipeOptions();
+        return true;
+    }
+
+    // 두 재료에 추가해 실제로 제조할 수 있는 첨가제를 표시한다.
+    private bool ShowAdditiveOptions()
+    {
+        string[] additives =
+        {
+        "졸음나방 날개가루",
+        "허물달팽이 진액",
+        "썩은별 가시",
+        "불씨도롱뇽 비늘"
+    };
+
+        int optionCount = 0;
+
+        foreach (string additive in additives)
+        {
+            List<string> ingredients =
+                new List<string>(cauldronTokens);
+
+            ingredients.Add(additive);
+
+            PotionData potion = PotionRecipes.Create(ingredients);
+
+            if (potion == null)
+            {
+                continue;
+            }
+
+            AddRecipeOption(additive, potion.potionName);
+            optionCount++;
+        }
+
+        if (optionCount == 0)
+        {
+            return false;
+        }
+
+        OpenRecipeOptions();
+        return true;
     }
 }
