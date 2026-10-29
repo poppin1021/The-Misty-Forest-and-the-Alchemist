@@ -3,42 +3,69 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-// 슬롯 목록 표시와 새 게임·이어하기를 처리한다.
 public class SaveSlotController : MonoBehaviour
 {
+    [Header("슬롯 순서대로 연결")]
     [SerializeField] private Button[] slotButtons = new Button[3];
+    [SerializeField] private Button[] deleteButtons = new Button[3];
+
+    [Header("삭제 확인 창")]
+    [SerializeField] private GameObject deleteConfirmPanel;
+    [SerializeField] private TMP_Text deleteMessageText;
+    [SerializeField] private Button confirmDeleteButton;
+    [SerializeField] private Button cancelDeleteButton;
 
     private bool isLoading;
+    private int pendingDeleteSlot;
 
+    // 버튼 이벤트는 여기서 한 번만 연결한다.
     private void Awake()
     {
-        for (int i = 0; i < slotButtons.Length && i < 3; i++)
+        for (int i = 0; i < 3; i++)
         {
-            if (slotButtons[i] == null)
-            {
-                continue;
-            }
-
             int slotNumber = i + 1;
 
-            slotButtons[i].onClick.AddListener(
-                () => SelectSlot(slotNumber)
-            );
+            if (i < slotButtons.Length && slotButtons[i] != null)
+            {
+                slotButtons[i].onClick.AddListener(
+                    () => SelectSlot(slotNumber)
+                );
+            }
+
+            if (i < deleteButtons.Length && deleteButtons[i] != null)
+            {
+                deleteButtons[i].onClick.AddListener(
+                    () => RequestDelete(slotNumber)
+                );
+            }
+        }
+
+        confirmDeleteButton.onClick.AddListener(ConfirmDelete);
+        cancelDeleteButton.onClick.AddListener(CancelDelete);
+    }
+
+    private void OnEnable()
+    {
+        CancelDelete();
+    }
+
+    private void OnDisable()
+    {
+        pendingDeleteSlot = 0;
+
+        if (deleteConfirmPanel != null)
+        {
+            deleteConfirmPanel.SetActive(false);
         }
     }
 
-    // 슬롯 창을 열 때마다 저장 파일을 확인한다.
-    private void OnEnable()
+    // 저장 상태에 따라 슬롯 문구와 버튼 상태를 갱신한다.
+    private void RefreshSlots()
     {
-        for (int i = 0; i < slotButtons.Length && i < 3; i++)
+        bool isConfirming = pendingDeleteSlot != 0;
+
+        for (int i = 0; i < 3; i++)
         {
-            Button button = slotButtons[i];
-
-            if (button == null)
-            {
-                continue;
-            }
-
             int slotNumber = i + 1;
             bool hasSave = SaveSystem.HasSave(slotNumber);
 
@@ -46,7 +73,23 @@ public class SaveSlotController : MonoBehaviour
                 ? SaveSystem.Load(slotNumber)
                 : null;
 
-            button.interactable = !hasSave || data != null;
+            if (i < deleteButtons.Length && deleteButtons[i] != null)
+            {
+                deleteButtons[i].interactable =
+                    !isLoading && !isConfirming && hasSave;
+            }
+
+            if (i >= slotButtons.Length || slotButtons[i] == null)
+            {
+                continue;
+            }
+
+            Button button = slotButtons[i];
+
+            button.interactable =
+                !isLoading
+                && !isConfirming
+                && (!hasSave || data != null);
 
             TMP_Text buttonText =
                 button.GetComponentInChildren<TMP_Text>(true);
@@ -77,9 +120,69 @@ public class SaveSlotController : MonoBehaviour
         }
     }
 
+    // 삭제할 슬롯을 기억하고 확인 창을 연다.
+    private void RequestDelete(int slotNumber)
+    {
+        if (isLoading
+            || pendingDeleteSlot != 0
+            || !SaveSystem.HasSave(slotNumber))
+        {
+            return;
+        }
+
+        pendingDeleteSlot = slotNumber;
+
+        deleteMessageText.text =
+            "슬롯 " + slotNumber + "의 저장 데이터를 삭제할까요?"
+            + "\n삭제한 데이터는 복구할 수 없습니다.";
+
+        confirmDeleteButton.interactable = true;
+
+        deleteConfirmPanel.SetActive(true);
+        deleteConfirmPanel.transform.SetAsLastSibling();
+
+        RefreshSlots();
+    }
+
+    // 확인 버튼을 눌렀을 때만 실제 파일을 삭제한다.
+    private void ConfirmDelete()
+    {
+        if (isLoading
+            || pendingDeleteSlot < 1
+            || pendingDeleteSlot > 3)
+        {
+            return;
+        }
+
+        int slotNumber = pendingDeleteSlot;
+
+        if (!SaveSystem.Delete(slotNumber))
+        {
+            deleteMessageText.text =
+                "삭제하지 못했습니다.\n다시 시도하거나 취소해주세요.";
+            return;
+        }
+
+        if (GameSession.SlotNumber == slotNumber)
+        {
+            GameSession.Clear();
+        }
+
+        CancelDelete();
+    }
+
+    private void CancelDelete()
+    {
+        pendingDeleteSlot = 0;
+        deleteConfirmPanel.SetActive(false);
+
+        RefreshSlots();
+    }
+
+    // 빈 슬롯은 새 게임, 저장된 슬롯은 이어하기로 진입한다.
     private void SelectSlot(int slotNumber)
     {
-        if (isLoading)
+        if (isLoading || pendingDeleteSlot != 0)
         {
             return;
         }
@@ -104,7 +207,6 @@ public class SaveSlotController : MonoBehaviour
             return;
         }
 
-        // 기존 저장은 유지하고, 빈 슬롯에만 새 파일을 만든다.
         if (!hasSave && !SaveSystem.Save(slotNumber, data))
         {
             return;

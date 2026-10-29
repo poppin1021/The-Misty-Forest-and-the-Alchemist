@@ -75,6 +75,11 @@ public class BagController : MonoBehaviour
     [SerializeField] private RectTransform recipeOptionsContent;
     [SerializeField] private RecipeOptionUI recipeOptionPrefab;
 
+    [Header("전투 결과")]
+    [SerializeField] private BattleResultController battleResultController;
+
+    private bool isBattleOver = false;
+
     // 주머니 원본과 현재 턴의 재료·물약 데이터
     // 테스트 구성: 기본 재료 9개 + 졸음가루 1개.
     private string[] bagTokens =
@@ -229,6 +234,7 @@ public class BagController : MonoBehaviour
         if (GameSession.CurrentSave != null)
         {
             data.battleNumber = GameSession.CurrentSave.battleNumber;
+            data.hasSeenPrologue = GameSession.CurrentSave.hasSeenPrologue;
         }
 
         if (!SaveSystem.Save(slotNumber, data))
@@ -296,9 +302,8 @@ public class BagController : MonoBehaviour
 
         isEnemyTurn = false;
 
-        if (playerHP <= 0)
+        if (CheckBattleEnd())
         {
-            RefreshHandUI();
             yield break;
         }
 
@@ -349,7 +354,8 @@ public class BagController : MonoBehaviour
 
     private bool CanPlayerAct()
     {
-        return !isPaused
+        return !isBattleOver
+            && !isPaused
             && !isEnemyTurn
             && !isPotionFlying
             && playerHP > 0
@@ -607,6 +613,8 @@ public class BagController : MonoBehaviour
         preparedPotion = null;
         preparedPotionButton.SetActive(false);
         RefreshHandUI();
+
+        CheckBattleEnd();
     }
 
     // 물약 데이터의 효과를 적용한다. 즉시 사용과 다음 턴 재발동이 공유한다.
@@ -683,6 +691,7 @@ public class BagController : MonoBehaviour
         }
 
         RefreshHandUI();
+        CheckBattleEnd();
     }
 
     // 6. 가방 창과 남은 재료 조회
@@ -1356,4 +1365,58 @@ public class BagController : MonoBehaviour
         OpenRecipeOptions();
         return true;
     }
+
+    // 전투 종료를 한 번만 처리하고 결과 화면을 요청한다.
+    private bool CheckBattleEnd()
+    {
+        if (isBattleOver)
+        {
+            return true;
+        }
+
+        if (playerHP > 0 && enemyHP > 0)
+        {
+            return false;
+        }
+
+        isBattleOver = true;
+
+        CloseBagPanel();
+        RefreshHandUI();
+
+        if (battleResultController != null)
+        {
+            bool isVictory = enemyHP <= 0 && playerHP > 0;
+
+            battleResultController.ShowResult(isVictory);
+        }
+
+        return true;
+    }
+
+    // 선택한 재료를 유지하고 체력을 회복한 첫 턴 데이터를 만든다.
+    public GameSaveData CreateRetryData()
+    {
+        GameSaveData data = new GameSaveData();
+
+        data.sceneName = gameObject.scene.name;
+        data.hasBattleState = false;
+
+        data.playerMaxHP = playerMaxHP;
+        data.playerHP = playerMaxHP;
+        data.bagTokens = (string[])bagTokens.Clone();
+
+        if (GameSession.CurrentSave != null)
+        {
+            data.battleNumber = GameSession.CurrentSave.battleNumber;
+            data.hasSeenPrologue = GameSession.CurrentSave.hasSeenPrologue;
+        }
+        else
+        {
+            data.hasSeenPrologue = true;
+        }
+
+        return data;
+    }
+
 }

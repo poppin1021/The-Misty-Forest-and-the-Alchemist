@@ -6,7 +6,9 @@ public class GameSaveData
 {
     public int saveVersion = 1;
     public string savedAt = "";
-    public string sceneName = "BattleTest";
+    public string sceneName = "Prologue";
+    // 스토리를 완료하거나 건너뛰었는지 저장한다.
+    public bool hasSeenPrologue = false;
 
     // 현재 테스트 전투와 같은 초기 수치다.
     public int playerHP = 40;

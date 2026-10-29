@@ -91,4 +91,22 @@ public static class SaveSystem
             return null;
         }
     }
+    // 지정한 슬롯의 저장 파일만 삭제한다.
+    public static bool Delete(int slotNumber)
+    {
+        try
+        {
+            string path = GetSavePath(slotNumber);
+
+            File.Delete(path);
+
+            Debug.Log("슬롯 " + slotNumber + " 삭제 완료");
+            return true;
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError("저장 데이터 삭제 실패: " + exception.Message);
+            return false;
+        }
+    }
 }
