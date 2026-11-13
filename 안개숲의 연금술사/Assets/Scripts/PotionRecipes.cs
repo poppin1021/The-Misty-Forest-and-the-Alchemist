@@ -1,221 +1,137 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
-// 재료 조합을 판별해 새 물약 데이터를 만든다. 등록되지 않은 조합은 null을 반환한다.
+// 기본 재료 15조합과 첨가제 4종을 공통 규칙으로 결합한다.
 public static class PotionRecipes
 {
     public static PotionData Create(List<string> ingredients)
     {
-        // 1. 기본 물약 + 졸음가루: 다음 내 턴에 기본 효과를 한 번 더 적용한다.
-        if (ingredients.Count == 3
-            && ingredients.Contains("졸음나방 날개가루")
-            && !ingredients.Contains("시듦버섯"))
+        if (ingredients == null || ingredients.Count < 2 || ingredients.Count > 3)
+            return null;
+
+        List<string> bases = new List<string>();
+        string additive = null;
+
+        foreach (string item in ingredients)
         {
-            List<string> baseIngredients = new List<string>(ingredients);
-
-            baseIngredients.Remove("졸음나방 날개가루");
-
-            // 첨가제를 뺀 두 재료로 아래의 기본 물약 판별을 재사용한다.
-            PotionData potion = Create(baseIngredients);
-
-            if (potion == null)
-            {
+            string ingredient = IngredientCatalog.Normalize(item);
+            if (IngredientCatalog.IsBase(ingredient))
+                bases.Add(ingredient);
+            else if (IngredientCatalog.IsAdditive(ingredient) && additive == null)
+                additive = ingredient;
+            else
                 return null;
+        }
+
+        if (bases.Count != 2) return null;
+        int mushrooms = bases.FindAll(item => item == IngredientCatalog.Mushroom).Count;
+        if (mushrooms > 0 && additive == null) return null;
+
+        PotionData potion = new PotionData();
+        foreach (string ingredient in bases)
+        {
+            switch (ingredient)
+            {
+                case "홍등열매": potion.damage += 6; break;
+                case "갑각잎": potion.block += 4; break;
+                case "새살꽃": potion.healing += 3; break;
+                case "바람씨앗": potion.drawCount++; break;
             }
-
-            potion.repeatNextTurn = true;
-
-            return potion;
         }
 
-        // 2. 시듦버섯 + 졸음가루: 적에게 약화를 주는 물약을 만든다.
-        if (ingredients.Count == 3
-            && ingredients.Contains("시듦버섯")
-            && ingredients.Contains("졸음나방 날개가루"))
+        string baseName = GetBaseName(bases);
+        potion.additiveName = additive;
+
+        if (mushrooms > 0)
         {
-            List<string> baseIngredients = new List<string>(ingredients);
-
-            baseIngredients.Remove("졸음나방 날개가루");
-
-            if (IsPair(baseIngredients, "홍등열매", "시듦버섯"))
+            int strength = mushrooms == 2 ? 2 : 1;
+            switch (additive)
             {
-                return new PotionData
-                {
-                    potionName = "졸음 폭발 물약",
-                    target = PotionTarget.Enemy,
-                    damage = 6,
-                    weakTurns = 1
-                };
+                case IngredientCatalog.Powder:
+                    potion.weakTurns = strength;
+                    potion.potionName = GetDebuffName(bases, "졸음", "깊은 졸음 물약");
+                    break;
+                case IngredientCatalog.Slime:
+                    potion.vulnerableTurns = strength;
+                    potion.potionName = GetDebuffName(bases, "취약", "강한 취약 물약");
+                    break;
+                case IngredientCatalog.Thorn:
+                    potion.poisonStacks = strength * 2;
+                    potion.potionName = GetDebuffName(bases, "중독", "짙은 중독 물약");
+                    break;
+                case IngredientCatalog.Scale:
+                    potion.burnStacks = strength * 2;
+                    potion.potionName = GetDebuffName(bases, "화상", "거센 화상 물약");
+                    break;
             }
-
-            if (IsPair(baseIngredients, "갑각잎", "시듦버섯"))
+        }
+        else
+        {
+            potion.potionName = baseName;
+            switch (additive)
             {
-                return new PotionData
-                {
-                    potionName = "졸음 장막 물약",
-                    target = PotionTarget.Enemy,
-                    block = 4,
-                    weakTurns = 1
-                };
+                case IngredientCatalog.Powder:
+                    potion.potionName = "잔향 " + baseName;
+                    potion.repeatNextTurn = true;
+                    potion.delayedDrawCount = potion.drawCount > 0 ? 1 : 0;
+                    break;
+                case IngredientCatalog.Slime:
+                    potion.potionName = "농축 " + baseName;
+                    potion.damage = PotionEffects.ScaleUp(potion.damage, 3, 2);
+                    potion.block = PotionEffects.ScaleUp(potion.block, 3, 2);
+                    potion.healing = PotionEffects.ScaleUp(potion.healing, 3, 2);
+                    if (potion.drawCount > 0) potion.drawCount++;
+                    break;
+                case IngredientCatalog.Thorn:
+                    potion.potionName = "위험한 " + baseName;
+                    potion.healthCost = 4;
+                    potion.damage *= 2;
+                    potion.block *= 2;
+                    potion.healing *= 2;
+                    potion.chooseOneDraw = potion.drawCount > 0;
+                    break;
+                case IngredientCatalog.Scale:
+                    potion.potionName = "잔열 " + baseName;
+                    potion.grantsAfterheat = true;
+                    break;
             }
-
-            if (IsPair(baseIngredients, "새살꽃", "시듦버섯"))
-            {
-                return new PotionData
-                {
-                    potionName = "졸음 치유 물약",
-                    target = PotionTarget.Enemy,
-                    healing = 3,
-                    weakTurns = 1
-                };
-            }
-
-            if (IsPair(baseIngredients, "바람씨앗", "시듦버섯"))
-            {
-                return new PotionData
-                {
-                    potionName = "졸음 바람 물약",
-                    target = PotionTarget.Enemy,
-                    drawCount = 1,
-                    weakTurns = 1
-                };
-            }
-
-            if (IsPair(baseIngredients, "시듦버섯", "시듦버섯"))
-            {
-                return new PotionData
-                {
-                    potionName = "깊은 졸음 물약",
-                    target = PotionTarget.Enemy,
-                    weakTurns = 2
-                };
-            }
-
-            return null;
         }
 
-        // 3. 기본 재료 두 개의 조합
-        if (ingredients.Count != 2)
-        {
-            return null;
-        }
-
-        if (IsPair(ingredients, "홍등열매", "홍등열매"))
-        {
-            return new PotionData
-            {
-                potionName = "폭발 물약",
-                target = PotionTarget.Enemy,
-                damage = 12
-            };
-        }
-
-        if (IsPair(ingredients, "홍등열매", "갑각잎"))
-        {
-            return new PotionData
-            {
-                potionName = "돌격 물약",
-                target = PotionTarget.Enemy,
-                damage = 6,
-                block = 4
-            };
-        }
-
-        if (IsPair(ingredients, "홍등열매", "새살꽃"))
-        {
-            return new PotionData
-            {
-                potionName = "생기폭발 물약",
-                target = PotionTarget.Enemy,
-                damage = 6,
-                healing = 3
-            };
-        }
-
-        if (IsPair(ingredients, "홍등열매", "바람씨앗"))
-        {
-            return new PotionData
-            {
-                potionName = "질풍 물약",
-                target = PotionTarget.Enemy,
-                damage = 6,
-                drawCount = 1
-            };
-        }
-
-        if (IsPair(ingredients, "갑각잎", "갑각잎"))
-        {
-            return new PotionData
-            {
-                potionName = "철벽 물약",
-                target = PotionTarget.Self,
-                block = 8
-            };
-        }
-
-        if (IsPair(ingredients, "갑각잎", "새살꽃"))
-        {
-            return new PotionData
-            {
-                potionName = "생명의 장막 물약",
-                target = PotionTarget.Self,
-                block = 4,
-                healing = 3
-            };
-        }
-
-        if (IsPair(ingredients, "갑각잎", "바람씨앗"))
-        {
-            return new PotionData
-            {
-                potionName = "바람 장막 물약",
-                target = PotionTarget.Self,
-                block = 4,
-                drawCount = 1
-            };
-        }
-
-        if (IsPair(ingredients, "새살꽃", "새살꽃"))
-        {
-            return new PotionData
-            {
-                potionName = "치유 물약",
-                target = PotionTarget.Self,
-                healing = 6
-            };
-        }
-
-        if (IsPair(ingredients, "새살꽃", "바람씨앗"))
-        {
-            return new PotionData
-            {
-                potionName = "생명의 바람 물약",
-                target = PotionTarget.Self,
-                healing = 3,
-                drawCount = 1
-            };
-        }
-
-        if (IsPair(ingredients, "바람씨앗", "바람씨앗"))
-        {
-            return new PotionData
-            {
-                potionName = "태풍 물약",
-                target = PotionTarget.Self,
-                drawCount = 2
-            };
-        }
-
-        return null;
+        potion.target = potion.damage > 0 || mushrooms > 0
+            ? PotionTarget.Enemy : PotionTarget.Self;
+        return potion;
     }
 
-    // 재료를 넣은 순서와 관계없이 같은 조합으로 판별한다.
-    private static bool IsPair(
-        List<string> ingredients,
-        string first,
-        string second)
+    public static string GetBaseName(IList<string> ingredients)
     {
-        return
-            (ingredients[0] == first && ingredients[1] == second)
-            || (ingredients[0] == second && ingredients[1] == first);
+        if (ingredients == null || ingredients.Count != 2) return "";
+        int a = Array.IndexOf(IngredientCatalog.BaseIngredients, IngredientCatalog.Normalize(ingredients[0]));
+        int b = Array.IndexOf(IngredientCatalog.BaseIngredients, IngredientCatalog.Normalize(ingredients[1]));
+        if (a < 0 || b < 0) return "";
+        if (a > b) { int temporary = a; a = b; b = temporary; }
+
+        string[,] names =
+        {
+            { "폭발 물약", "돌격 물약", "생기폭발 물약", "포자 폭발 물약", "질풍 물약" },
+            { "", "철벽 물약", "생명의 장막 물약", "포자 장막 물약", "바람 장막 물약" },
+            { "", "", "치유 물약", "포자 치유 물약", "생명의 바람 물약" },
+            { "", "", "", "짙은 포자 물약", "포자 바람 물약" },
+            { "", "", "", "", "태풍 물약" }
+        };
+        return names[a, b];
+    }
+
+    private static string GetDebuffName(List<string> bases, string prefix, string doubleName)
+    {
+        if (bases[0] == IngredientCatalog.Mushroom && bases[1] == IngredientCatalog.Mushroom)
+            return doubleName;
+        string other = bases[0] == IngredientCatalog.Mushroom ? bases[1] : bases[0];
+        switch (other)
+        {
+            case "홍등열매": return prefix + " 폭발 물약";
+            case "갑각잎": return prefix + " 장막 물약";
+            case "새살꽃": return prefix + " 치유 물약";
+            default: return prefix + " 바람 물약";
+        }
     }
 }

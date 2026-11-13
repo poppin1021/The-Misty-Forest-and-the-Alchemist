@@ -1,17 +1,18 @@
-using System;
+ï»¿using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class IngredientSelectionCardUI : MonoBehaviour
 {
-    [Header("Ä«µå ±¸¼º")]
+    [Header("ì¹´ë“œ êµ¬ì„±")]
     [SerializeField] private Image ingredientIcon;
     [SerializeField] private TMP_Text ingredientNameText;
     [SerializeField] private TMP_Text amountText;
     [SerializeField] private Button minusButton;
     [SerializeField] private Button plusButton;
 
+    private TMP_Text priceStockText;
     private int ingredientIndex;
     private Action<int, int> onCountChanged;
 
@@ -19,23 +20,19 @@ public class IngredientSelectionCardUI : MonoBehaviour
     {
         minusButton.onClick.AddListener(() => ChangeCount(-1));
         plusButton.onClick.AddListener(() => ChangeCount(1));
+        ConfigureCompactLayout();
+        CreatePriceLabel();
     }
 
-    // ÀÌ Ä«µå¿¡ Ç¥½ÃÇÒ Àç·á¿Í ¹öÆ° µ¿ÀÛÀ» ¿¬°áÇÑ´Ù.
     public void Initialize(
-        int index,
-        string displayName,
-        Sprite icon,
-        Action<int, int> countChanged)
+        int index, string displayName, Sprite icon, Action<int, int> countChanged)
     {
         ingredientIndex = index;
         onCountChanged = countChanged;
-
         ingredientNameText.text = displayName;
         ingredientIcon.sprite = icon;
         ingredientIcon.preserveAspect = true;
         ingredientIcon.enabled = icon != null;
-
         UpdateDisplay(0, true);
     }
 
@@ -44,11 +41,64 @@ public class IngredientSelectionCardUI : MonoBehaviour
         onCountChanged?.Invoke(ingredientIndex, change);
     }
 
-    // ¼±ÅÃ °³¼ö¿Í Áõ°¨ ¹öÆ°ÀÇ »ç¿ë °¡´É »óÅÂ¸¦ °»½ÅÇÑ´Ù.
     public void UpdateDisplay(int amount, bool canAdd)
     {
         amountText.text = amount.ToString();
         minusButton.interactable = amount > 0;
         plusButton.interactable = canAdd;
+    }
+
+    public void UpdateMarketDisplay(
+        int amount, int price, int remainingStock, bool canAdd, bool canEdit)
+    {
+        UpdateDisplay(amount, canEdit && canAdd);
+        minusButton.interactable = canEdit && amount > 0;
+        priceStockText.text = price + "ì½”ì¸  |  ë‚¨ì€ ì¬ê³  " + remainingStock + "ê°œ";
+    }
+
+    // ê¸°ì¡´ ì¹´ë“œ í”„ë¦¬íŒ¹ì˜ ê¸€ê¼´ì„ ì‚¬ìš©í•´ ê°€ê²©ê³¼ ì¬ê³  í‘œì‹œë¥¼ ì¶”ê°€í•œë‹¤.
+    private void CreatePriceLabel()
+    {
+        priceStockText = Instantiate(ingredientNameText, transform);
+        priceStockText.name = "PriceStockText";
+        priceStockText.text = "";
+        priceStockText.fontSize = 20f;
+        priceStockText.enableAutoSizing = false;
+        priceStockText.alignment = TextAlignmentOptions.Center;
+        priceStockText.raycastTarget = false;
+        priceStockText.margin = Vector4.zero;
+
+        RectTransform rect = priceStockText.rectTransform;
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);
+        rect.pivot = new Vector2(0.5f, 0f);
+        rect.anchoredPosition = new Vector2(0f, 8f);
+        rect.sizeDelta = new Vector2(420f, 28f);
+        rect.localScale = Vector3.one;
+    }
+
+    // 9ì¢…ì„ 3ì—´ 3í–‰ìœ¼ë¡œ í‘œì‹œí•  ìˆ˜ ìˆë„ë¡ ì¹´ë“œ ë‚´ë¶€ë¥¼ ë°°ì¹˜í•œë‹¤.
+    private void ConfigureCompactLayout()
+    {
+        RectTransform nameRect = ingredientNameText.rectTransform;
+        nameRect.anchorMin = nameRect.anchorMax = new Vector2(0.5f, 1f);
+        nameRect.pivot = new Vector2(0.5f, 1f);
+        nameRect.anchoredPosition = new Vector2(0f, -8f);
+        nameRect.sizeDelta = new Vector2(400f, 34f);
+        ingredientNameText.fontSize = 24f;
+        ingredientNameText.enableAutoSizing = false;
+        SetControlRect(ingredientIcon.rectTransform, -125f, 76f, 76f);
+        SetControlRect(minusButton.transform as RectTransform, -22f, 56f, 56f);
+        SetControlRect(amountText.rectTransform, 58f, 80f, 56f);
+        SetControlRect(plusButton.transform as RectTransform, 138f, 56f, 56f);
+        amountText.fontSize = 30f;
+    }
+
+    private void SetControlRect(RectTransform rect, float x, float width, float height)
+    {
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = new Vector2(x, -8f);
+        rect.sizeDelta = new Vector2(width, height);
+        rect.localScale = Vector3.one;
     }
 }

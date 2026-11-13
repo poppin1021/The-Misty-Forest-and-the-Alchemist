@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -6,126 +6,253 @@ using UnityEngine.UI;
 
 public class PreparationController : MonoBehaviour
 {
-    private const int RequiredCount = 10;
-    private const int MaxPerIngredient = 3;
-
-
-    [Header("È­¸é ¿¬°á")]
+    [Header("ìƒì  í™”ë©´")]
     [SerializeField] private Transform ingredientList;
     [SerializeField] private IngredientSelectionCardUI cardPrefab;
     [SerializeField] private TMP_Text selectionCountText;
+    [SerializeField] private TMP_Text guideText;
     [SerializeField] private Button departButton;
 
-    [Header("È«µî¿­¸Å, °©°¢ÀÙ, »õ»ì²É, ½Ãµê¹ö¼¸, ¹Ù¶÷¾¾¾Ñ, Á¹À½°¡·ç ¼ø¼­")]
-    [SerializeField] private Sprite[] ingredientSprites = new Sprite[6];
-
-    // ½ÇÁ¦ ÀüÅõ¿¡¼­ »ç¿ëÇÏ´Â Àç·á ÀÌ¸§ÀÌ´Ù.
-    private readonly string[] ingredientNames =
-    {
-        "È«µî¿­¸Å",
-        "°©°¢ÀÙ",
-        "»õ»ì²É",
-        "½Ãµê¹ö¼¸",
-        "¹Ù¶÷¾¾¾Ñ",
-        "Á¹À½³ª¹æ ³¯°³°¡·ç"
-    };
-
-    private readonly int[] selectedCounts = new int[6];
+    [Header("ê¸°ë³¸ ì¬ë£Œ 5ì¢…, ì¡¸ìŒê°€ë£¨, ì§„ì•¡, ê°€ì‹œ, ë¹„ëŠ˜ ìˆœì„œ")]
+    [SerializeField] private Sprite[] ingredientSprites = new Sprite[IngredientCatalog.Count];
 
     private readonly IngredientSelectionCardUI[] cards =
-        new IngredientSelectionCardUI[6];
+        new IngredientSelectionCardUI[PreparationMarket.IngredientCount];
 
-    private int totalCount;
+    private PreparationShopData shop;
+    private TMP_Text marketNewsText;
+    private TMP_Text statusText;
     private bool isDeparting;
 
     private void Start()
     {
-        departButton.onClick.AddListener(Depart);
+        PreparationShopData savedShop = GameSession.CurrentSave?.preparationShop;
+        shop = PreparationMarket.Upgrade(savedShop)
+            ?? PreparationMarket.Create(System.Guid.NewGuid().GetHashCode());
 
+        departButton.onClick.AddListener(Depart);
+        CreateMarketUI();
         CreateCards();
         RefreshUI();
+
+        if (!SaveShopState())
+        {
+            ShowError("ìƒì  ì •ë³´ë¥¼ ì €ì¥í•˜ì§€ ëª»í–ˆìŠµë‹ˆë‹¤. Consoleì„ í™•ì¸í•´ì£¼ì„¸ìš”.");
+        }
     }
 
-    // Àç·á Á¾·ùº°·Î Ä«µå¸¦ ÇÏ³ª¾¿ »ı¼ºÇÑ´Ù.
+    // ê¸°ì¡´ ê¸€ê¼´ê³¼ ì¹´ë“œ ë°°ì¹˜ë¥¼ í™œìš©í•´ ì†Œì‹ê³¼ êµ¬ë§¤ ì•ˆë‚´ë¥¼ í‘œì‹œí•œë‹¤.
+    private void CreateMarketUI()
+    {
+        GameObject newsPanel = new GameObject(
+            "MarketNewsPanel", typeof(RectTransform),
+            typeof(CanvasRenderer), typeof(Image)
+        );
+        newsPanel.layer = guideText.gameObject.layer;
+        newsPanel.transform.SetParent(guideText.transform.parent, false);
+
+        RectTransform panelRect = newsPanel.GetComponent<RectTransform>();
+        panelRect.anchorMin = panelRect.anchorMax = new Vector2(0.5f, 1f);
+        panelRect.pivot = new Vector2(0.5f, 1f);
+        panelRect.anchoredPosition = new Vector2(0f, -240f);
+        panelRect.sizeDelta = new Vector2(1440f, 110f);
+
+        Image panelImage = newsPanel.GetComponent<Image>();
+        panelImage.color = new Color(0.20f, 0.23f, 0.20f, 0.96f);
+        panelImage.raycastTarget = false;
+
+        marketNewsText = Instantiate(guideText, panelRect);
+        marketNewsText.name = "MarketNewsText";
+        marketNewsText.fontSize = 22f;
+        marketNewsText.enableAutoSizing = false;
+        marketNewsText.richText = true;
+        marketNewsText.alignment = TextAlignmentOptions.MidlineLeft;
+        marketNewsText.raycastTarget = false;
+        marketNewsText.margin = Vector4.zero;
+        marketNewsText.lineSpacing = 2f;
+
+        RectTransform newsRect = marketNewsText.rectTransform;
+        newsRect.anchorMin = Vector2.zero;
+        newsRect.anchorMax = Vector2.one;
+        newsRect.offsetMin = new Vector2(18f, 10f);
+        newsRect.offsetMax = new Vector2(-18f, -10f);
+        newsRect.localScale = Vector3.one;
+
+        statusText = Instantiate(guideText, guideText.transform.parent);
+        statusText.name = "MarketStatusText";
+        statusText.fontSize = 22f;
+        statusText.enableAutoSizing = false;
+        statusText.alignment = TextAlignmentOptions.Center;
+        statusText.raycastTarget = false;
+        statusText.margin = Vector4.zero;
+
+        RectTransform statusRect = statusText.rectTransform;
+        statusRect.anchorMin = statusRect.anchorMax = new Vector2(0.5f, 0f);
+        statusRect.pivot = new Vector2(0.5f, 0f);
+        statusRect.anchoredPosition = new Vector2(0f, 120f);
+        statusRect.sizeDelta = new Vector2(1440f, 32f);
+        statusRect.localScale = Vector3.one;
+    }
+
     private void CreateCards()
     {
-        for (int i = 0; i < ingredientNames.Length; i++)
+        for (int i = 0; i < cards.Length; i++)
         {
-            IngredientSelectionCardUI card =
-                Instantiate(cardPrefab, ingredientList);
-
-            cards[i] = card;
-
-            string displayName =
-                ingredientNames[i] == "Á¹À½³ª¹æ ³¯°³°¡·ç"
-                    ? "Á¹À½°¡·ç"
-                    : ingredientNames[i];
-
-            Sprite icon =
-                i < ingredientSprites.Length
-                    ? ingredientSprites[i]
-                    : null;
-
-            card.Initialize(
-                i,
-                displayName,
-                icon,
-                ChangeCount
+            cards[i] = Instantiate(cardPrefab, ingredientList);
+            Sprite icon = i < ingredientSprites.Length ? ingredientSprites[i] : null;
+            cards[i].Initialize(
+                i, PreparationMarket.GetDisplayName(i), icon, ChangeCount
             );
         }
     }
 
-    // °³¼ö°¡ À½¼ö°¡ µÇ°Å³ª ÀüÃ¼ 10°³¸¦ ÃÊ°úÇÏÁö ¾Êµµ·Ï Á¦ÇÑÇÑ´Ù.
     private void ChangeCount(int index, int change)
     {
-        if (isDeparting)
+        if (isDeparting || !PreparationMarket.TryChangeQuantity(shop, index, change))
         {
             return;
         }
 
-        int nextCount = selectedCounts[index] + change;
-        int nextTotal = totalCount + change;
-
-        if (nextCount < 0
-    || nextCount > MaxPerIngredient
-    || nextTotal > RequiredCount)
+        if (!SaveShopState())
         {
+            PreparationMarket.TryChangeQuantity(shop, index, -change);
+            RefreshUI();
+            ShowError("ì¥ë°”êµ¬ë‹ˆë¥¼ ì €ì¥í•˜ì§€ ëª»í–ˆìŠµë‹ˆë‹¤. ë‹¤ì‹œ ì‹œë„í•´ì£¼ì„¸ìš”.");
             return;
         }
-
-        selectedCounts[index] = nextCount;
-        totalCount = nextTotal;
 
         RefreshUI();
     }
 
     private void RefreshUI()
     {
-        selectionCountText.text =
-            $"¼±ÅÃÇÑ Àç·á {totalCount} / {RequiredCount}";
+        int totalCost = PreparationMarket.GetTotalCost(shop);
+        int totalCount = PreparationMarket.GetTotalCount(shop);
+        int remainingCoins = shop.budget - totalCost;
 
-        bool canAdd =
-            !isDeparting && totalCount < RequiredCount;
+        selectionCountText.text = "ë‚¨ì€ ì½”ì¸ " + remainingCoins
+            + " / " + shop.budget + "   |   ì¥ë°”êµ¬ë‹ˆ " + totalCount + "ê°œ";
+
+        marketNewsText.text = "<b>ì˜¤ëŠ˜ì˜ ìˆ² ì†Œì‹</b>\n"
+            + "<color=#BDE5A8>" + shop.harvestNews + "</color>\n"
+            + "<color=#F2B7A0>" + shop.shortageNews + "</color>";
 
         for (int i = 0; i < cards.Length; i++)
         {
-            bool canAddThisIngredient =
-                canAdd && selectedCounts[i] < MaxPerIngredient;
-
-            cards[i].UpdateDisplay(
-                selectedCounts[i],
-                canAddThisIngredient
+            int stock = shop.stocks[i] - shop.cartCounts[i];
+            bool canAdd = stock > 0 && remainingCoins >= shop.prices[i];
+            cards[i].UpdateMarketDisplay(
+                shop.cartCounts[i], shop.prices[i], stock, canAdd, !isDeparting
             );
         }
 
-        departButton.interactable =
-            !isDeparting && totalCount == RequiredCount;
+        bool hasRecipe = HasRecipe(false);
+        departButton.interactable = !isDeparting
+            && totalCount >= PreparationMarket.MinimumItemCount && hasRecipe;
+
+        statusText.color = Color.white;
+
+        if (totalCount < PreparationMarket.MinimumItemCount)
+        {
+            statusText.text = "ì²« ì†íŒ¨ë¥¼ ì±„ìš¸ ìˆ˜ ìˆë„ë¡ ì¬ë£Œë¥¼ ìµœì†Œ "
+                + PreparationMarket.MinimumItemCount + "ê°œ ë‹´ì•„ì£¼ì„¸ìš”.";
+        }
+        else if (!hasRecipe)
+        {
+            statusText.text = "ë¬¼ì•½ì„ ì œì¡°í•  ìˆ˜ ìˆëŠ” ì¬ë£Œ ì¡°í•©ì„ í•¨ê»˜ ë‹´ì•„ì£¼ì„¸ìš”.";
+        }
+        else if (!HasRecipe(true))
+        {
+            statusText.text = "ê³µê²© ë¬¼ì•½ì„ ë§Œë“¤ ì¬ë£Œë„ ì±™ê¸°ë©´ íƒì‚¬ì— ë„ì›€ì´ ë©ë‹ˆë‹¤.";
+            statusText.color = new Color(1f, 0.82f, 0.45f);
+        }
+        else
+        {
+            statusText.text = "ì¶œë°œí•˜ë©´ ì¥ë°”êµ¬ë‹ˆ ì¬ë£Œë¥¼ êµ¬ë§¤í•˜ê³  íƒì‚¬ë¥¼ ì‹œì‘í•©ë‹ˆë‹¤.";
+        }
     }
 
-    // ¼±ÅÃÇÑ Àç·á¸¦ ÇöÀç ½½·Ô¿¡ ÀúÀåÇÑ µÚ Ã¹ ÀüÅõ·Î ÀÌµ¿ÇÑ´Ù.
+    private List<string> GetCartIngredients()
+    {
+        List<string> ingredients = new List<string>();
+
+        for (int i = 0; i < PreparationMarket.IngredientCount; i++)
+        {
+            for (int count = 0; count < shop.cartCounts[i]; count++)
+            {
+                ingredients.Add(PreparationMarket.GetIngredientName(i));
+            }
+        }
+
+        return ingredients;
+    }
+
+    // í˜„ì¬ ë“±ë¡ëœ ì‹¤ì œ ë ˆì‹œí”¼ë¥¼ ê¸°ì¤€ìœ¼ë¡œ 2ê°œì™€ 3ê°œ ì¬ë£Œ ì¡°í•©ì„ í™•ì¸í•œë‹¤.
+    private bool HasRecipe(bool requireDamage)
+    {
+        List<string> ingredients = GetCartIngredients();
+
+        for (int i = 0; i < ingredients.Count; i++)
+        {
+            for (int j = i + 1; j < ingredients.Count; j++)
+            {
+                PotionData pair = PotionRecipes.Create(
+                    new List<string> { ingredients[i], ingredients[j] }
+                );
+                if (pair != null && (!requireDamage || pair.damage > 0))
+                {
+                    return true;
+                }
+
+                for (int k = j + 1; k < ingredients.Count; k++)
+                {
+                    PotionData triple = PotionRecipes.Create(
+                        new List<string> { ingredients[i], ingredients[j], ingredients[k] }
+                    );
+                    if (triple != null && (!requireDamage || triple.damage > 0))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    // ì¥ë°”êµ¬ë‹ˆì™€ ì†Œì‹ë„ ì €ì¥í•´ ì´ì–´í•˜ê¸°ë¡œ ê°€ê²©ì„ ë‹¤ì‹œ ë½‘ì§€ ëª»í•˜ê²Œ í•œë‹¤.
+    private bool SaveShopState()
+    {
+        int slotNumber = GameSession.SlotNumber;
+        GameSaveData currentSave = GameSession.CurrentSave;
+
+        if (slotNumber < 1 || slotNumber > 3 || currentSave == null)
+        {
+            return true;
+        }
+
+        GameSaveData updatedSave = JsonUtility.FromJson<GameSaveData>(
+            JsonUtility.ToJson(currentSave)
+        );
+        updatedSave.sceneName = "Preparation";
+        updatedSave.hasBattleState = false;
+        updatedSave.coins = shop.budget;
+        updatedSave.preparationShop = PreparationMarket.Copy(shop);
+
+        if (!SaveSystem.Save(slotNumber, updatedSave))
+        {
+            return false;
+        }
+
+        GameSession.SelectSave(slotNumber, updatedSave);
+        return true;
+    }
+
     private void Depart()
     {
-        if (isDeparting || totalCount != RequiredCount)
+        if (isDeparting
+            || PreparationMarket.GetTotalCount(shop) < PreparationMarket.MinimumItemCount
+            || !HasRecipe(false))
         {
             return;
         }
@@ -135,51 +262,50 @@ public class PreparationController : MonoBehaviour
 
         if (slotNumber < 1 || slotNumber > 3 || currentSave == null)
         {
-            Debug.LogError(
-                "Ãâ¹ß Å×½ºÆ®´Â Title ¾À¿¡¼­ ÀúÀå ½½·ÔÀ» ¼±ÅÃÇÑ µÚ ÁøÇàÇØÁÖ¼¼¿ä."
-            );
+            ShowError("ì¶œë°œ í…ŒìŠ¤íŠ¸ëŠ” Title ì”¬ì—ì„œ ì €ì¥ ìŠ¬ë¡¯ì„ ì„ íƒí•œ ë’¤ ì§„í–‰í•´ì£¼ì„¸ìš”.");
             return;
         }
 
         if (!Application.CanStreamedLevelBeLoaded("BattleTest"))
         {
-            Debug.LogError(
-                "Build ProfilesÀÇ Scene List¿¡ BattleTest ¾ÀÀ» Ãß°¡ÇØÁÖ¼¼¿ä."
-            );
+            ShowError("Scene Listì— BattleTest ì”¬ì„ ì¶”ê°€í•´ì£¼ì„¸ìš”.");
             return;
         }
 
-        List<string> selectedIngredients = new List<string>();
-
-        for (int i = 0; i < ingredientNames.Length; i++)
-        {
-            for (int count = 0; count < selectedCounts[i]; count++)
-            {
-                selectedIngredients.Add(ingredientNames[i]);
-            }
-        }
-
-        // ÀúÀå ½ÇÆĞ ½Ã ±âÁ¸ ÁøÇà Á¤º¸°¡ ¹Ù²îÁö ¾Êµµ·Ï º¹»çÇÑ´Ù.
-        GameSaveData updatedSave =
-            JsonUtility.FromJson<GameSaveData>(
-                JsonUtility.ToJson(currentSave)
-            );
-
-        updatedSave.bagTokens = selectedIngredients.ToArray();
+        GameSaveData updatedSave = JsonUtility.FromJson<GameSaveData>(
+            JsonUtility.ToJson(currentSave)
+        );
+        updatedSave.bagTokens = GetCartIngredients().ToArray();
+        updatedSave.preparationShop = PreparationMarket.AfterPurchase(shop);
+        updatedSave.coins = updatedSave.preparationShop.budget;
         updatedSave.sceneName = "BattleTest";
         updatedSave.hasSeenPrologue = true;
         updatedSave.hasBattleState = false;
 
         if (!SaveSystem.Save(slotNumber, updatedSave))
         {
+            ShowError("êµ¬ë§¤ ë‚´ìš©ì„ ì €ì¥í•˜ì§€ ëª»í–ˆìŠµë‹ˆë‹¤. ë‹¤ì‹œ ì‹œë„í•´ì£¼ì„¸ìš”.");
             return;
         }
 
         GameSession.SelectSave(slotNumber, updatedSave);
-
         isDeparting = true;
         RefreshUI();
-
-        SceneManager.LoadScene("BattleTest");
+        if (!SceneTransition.LoadScene("BattleTest", CancelDeparture))
+            CancelDeparture();
     }
+
+    private void ShowError(string message)
+    {
+        statusText.text = message;
+        statusText.color = new Color(1f, 0.65f, 0.55f);
+    }
+
+    private void CancelDeparture()
+    {
+        isDeparting = false;
+        RefreshUI();
+        ShowError("ì „íˆ¬ í™”ë©´ìœ¼ë¡œ ì´ë™í•˜ì§€ ëª»í–ˆìŠµë‹ˆë‹¤. ë‹¤ì‹œ ì‹œë„í•´ì£¼ì„¸ìš”.");
+    }
+
 }

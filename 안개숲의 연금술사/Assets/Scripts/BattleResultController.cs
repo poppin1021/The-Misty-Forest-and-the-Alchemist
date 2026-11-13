@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -6,17 +6,17 @@ using UnityEngine.UI;
 
 public class BattleResultController : MonoBehaviour
 {
-    [Header("ÀüÅõ¿Í °á°ú È­¸é")]
+    [Header("ì „íˆ¬ì™€ ê²°ê³¼ í™”ë©´")]
     [SerializeField] private BagController bagController;
     [SerializeField] private GameObject resultPanel;
     [SerializeField] private TMP_Text resultTitleText;
     [SerializeField] private TMP_Text resultMessageText;
 
-    [Header("°á°ú È­¸é ¹öÆ°")]
+    [Header("ê²°ê³¼ í™”ë©´ ë²„íŠ¼")]
     [SerializeField] private Button retryButton;
     [SerializeField] private Button returnToTitleButton;
 
-    [Header("°á°ú Ç¥½Ã ´ë±â ½Ã°£")]
+    [Header("ê²°ê³¼ í‘œì‹œ ëŒ€ê¸° ì‹œê°„")]
     [SerializeField] private float resultDelay = 0.35f;
 
     private bool hasResult;
@@ -30,7 +30,7 @@ public class BattleResultController : MonoBehaviour
         returnToTitleButton.onClick.AddListener(ReturnToTitle);
     }
 
-    // ½Â¸® ¶Ç´Â ÆÐ¹è¿¡ ¸ÂÃç ¹®±¸¸¦ ÁØºñÇÑ´Ù.
+    // ìŠ¹ë¦¬ ë˜ëŠ” íŒ¨ë°°ì— ë§žì¶° ë¬¸êµ¬ë¥¼ ì¤€ë¹„í•œë‹¤.
     public void ShowResult(bool isVictory)
     {
         if (hasResult)
@@ -41,11 +41,11 @@ public class BattleResultController : MonoBehaviour
         hasResult = true;
 
         resultTitleText.text =
-            isVictory ? "ÀüÅõ ½Â¸®" : "ÀüÅõ ÆÐ¹è";
+            isVictory ? "ì „íˆ¬ ìŠ¹ë¦¬" : "ì „íˆ¬ íŒ¨ë°°";
 
         resultMessageText.text = isVictory
-            ? "½£ÀÇ Áü½ÂÀ» ¹°¸®ÃÆ½À´Ï´Ù."
-            : "½£ÀÇ Áü½Â¿¡°Ô ¾²·¯Á³½À´Ï´Ù.\nÀç·á Á¶ÇÕÀ» ¹Ù²ã ´Ù½Ã µµÀüÇØº¸¼¼¿ä.";
+            ? "ìˆ²ì˜ ì§ìŠ¹ì„ ë¬¼ë¦¬ì³¤ìŠµë‹ˆë‹¤."
+            : "ìˆ²ì˜ ì§ìŠ¹ì—ê²Œ ì“°ëŸ¬ì¡ŒìŠµë‹ˆë‹¤.\nìž¬ë£Œ ì¡°í•©ì„ ë°”ê¿” ë‹¤ì‹œ ë„ì „í•´ë³´ì„¸ìš”.";
 
         StartCoroutine(OpenResultAfterDelay());
     }
@@ -60,7 +60,7 @@ public class BattleResultController : MonoBehaviour
         resultPanel.transform.SetAsLastSibling();
     }
 
-    // ÇöÀç Àç·á ±¸¼ºÀ» À¯ÁöÇÑ ÀçµµÀü »óÅÂ¸¦ ÀúÀåÇÏ°í ÀüÅõ¸¦ ´Ù½Ã ¿¬´Ù.
+    // í˜„ìž¬ ìž¬ë£Œ êµ¬ì„±ì„ ìœ ì§€í•œ ìž¬ë„ì „ ìƒíƒœë¥¼ ì €ìž¥í•˜ê³  ì „íˆ¬ë¥¼ ë‹¤ì‹œ ì—°ë‹¤.
     private void RetryBattle()
     {
         if (!CanLeave())
@@ -74,19 +74,19 @@ public class BattleResultController : MonoBehaviour
         if (!Application.CanStreamedLevelBeLoaded(retryData.sceneName))
         {
             resultMessageText.text =
-                "ÀüÅõ ¾ÀÀ» ºÒ·¯¿Ã ¼ö ¾ø½À´Ï´Ù.\nScene List¸¦ È®ÀÎÇØÁÖ¼¼¿ä.";
+                "ì „íˆ¬ ì”¬ì„ ë¶ˆëŸ¬ì˜¬ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.\nScene Listë¥¼ í™•ì¸í•´ì£¼ì„¸ìš”.";
             return;
         }
 
         int slotNumber = GameSession.SlotNumber;
 
-        // Å¸ÀÌÆ²¿¡¼­ ½½·ÔÀ» ¼±ÅÃÇÏ°í µé¾î¿Â °æ¿ì ÆÄÀÏ¿¡µµ ÀúÀåÇÑ´Ù.
+        // íƒ€ì´í‹€ì—ì„œ ìŠ¬ë¡¯ì„ ì„ íƒí•˜ê³  ë“¤ì–´ì˜¨ ê²½ìš° íŒŒì¼ì—ë„ ì €ìž¥í•œë‹¤.
         if (slotNumber >= 1 && slotNumber <= 3)
         {
             if (!SaveSystem.Save(slotNumber, retryData))
             {
                 resultMessageText.text =
-                    "ÀçµµÀü Á¤º¸¸¦ ÀúÀåÇÏÁö ¸øÇß½À´Ï´Ù.\n´Ù½Ã ½ÃµµÇØÁÖ¼¼¿ä.";
+                    "ìž¬ë„ì „ ì •ë³´ë¥¼ ì €ìž¥í•˜ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.\në‹¤ì‹œ ì‹œë„í•´ì£¼ì„¸ìš”.";
                 return;
             }
         }
@@ -94,7 +94,8 @@ public class BattleResultController : MonoBehaviour
         GameSession.SelectSave(slotNumber, retryData);
 
         BeginLeaving();
-        SceneManager.LoadScene(retryData.sceneName);
+        if (!SceneTransition.LoadScene(retryData.sceneName, CancelLeaving))
+            CancelLeaving();
     }
 
     private void ReturnToTitle()
@@ -107,12 +108,13 @@ public class BattleResultController : MonoBehaviour
         if (!Application.CanStreamedLevelBeLoaded("Title"))
         {
             resultMessageText.text =
-                "Title ¾ÀÀ» ºÒ·¯¿Ã ¼ö ¾ø½À´Ï´Ù.\nScene List¸¦ È®ÀÎÇØÁÖ¼¼¿ä.";
+                "Title ì”¬ì„ ë¶ˆëŸ¬ì˜¬ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.\nScene Listë¥¼ í™•ì¸í•´ì£¼ì„¸ìš”.";
             return;
         }
 
         BeginLeaving();
-        SceneManager.LoadScene("Title");
+        if (!SceneTransition.LoadScene("Title", CancelLeaving))
+            CancelLeaving();
     }
 
     private bool CanLeave()
@@ -131,4 +133,13 @@ public class BattleResultController : MonoBehaviour
 
         Time.timeScale = 1f;
     }
+
+    private void CancelLeaving()
+    {
+        isLeaving = false;
+        retryButton.interactable = true;
+        returnToTitleButton.interactable = true;
+        resultMessageText.text = "í™”ë©´ì„ ì „í™˜í•˜ì§€ ëª»í–ˆìŠµë‹ˆë‹¤. ë‹¤ì‹œ ì‹œë„í•´ì£¼ì„¸ìš”.";
+    }
+
 }

@@ -1,11 +1,11 @@
-using TMPro;
+ï»¿using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class PauseMenuController : MonoBehaviour
 {
-    [Header("ÀüÅõ¿Í ÀÏ½ÃÁ¤Áö UI")]
+    [Header("ì „íˆ¬ì™€ ì¼ì‹œì •ì§€ UI")]
     [SerializeField] private BagController bagController;
     [SerializeField] private GameObject pausePanel;
     [SerializeField] private Button pauseButton;
@@ -19,6 +19,13 @@ public class PauseMenuController : MonoBehaviour
     {
         pausePanel.SetActive(false);
         pauseStatusText.text = "";
+    }
+
+    public void UseSettingsButton(Button button)
+    {
+        if (pauseButton != null) pauseButton.gameObject.SetActive(false);
+        pauseButton = button;
+        pauseButton.onClick.AddListener(OpenPauseMenu);
     }
 
     private void Update()
@@ -58,7 +65,7 @@ public class PauseMenuController : MonoBehaviour
         bagController.ResumeBattle();
     }
 
-    // ÀúÀå ÈÄ¿¡µµ ÀÏ½ÃÁ¤Áö ¸Ş´º¸¦ À¯ÁöÇÑ´Ù.
+    // ì €ì¥ í›„ì—ë„ ì¼ì‹œì •ì§€ ë©”ë‰´ë¥¼ ìœ ì§€í•œë‹¤.
     public void SaveGame()
     {
         if (!isPaused || isLeaving)
@@ -70,7 +77,7 @@ public class PauseMenuController : MonoBehaviour
         pauseStatusText.text = message;
     }
 
-    // ÀúÀå¿¡ ¼º°øÇßÀ» ¶§¸¸ Å¸ÀÌÆ²·Î ÀÌµ¿ÇÑ´Ù.
+    // ì €ì¥ì— ì„±ê³µí–ˆì„ ë•Œë§Œ íƒ€ì´í‹€ë¡œ ì´ë™í•œë‹¤.
     public void SaveAndReturnToTitle()
     {
         if (!isPaused || isLeaving)
@@ -80,7 +87,7 @@ public class PauseMenuController : MonoBehaviour
 
         if (!Application.CanStreamedLevelBeLoaded("Title"))
         {
-            pauseStatusText.text = "Title ¾ÀÀ» ºÒ·¯¿Ã ¼ö ¾ø½À´Ï´Ù.";
+            pauseStatusText.text = "Title ì”¬ì„ ë¶ˆëŸ¬ì˜¬ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.";
             return;
         }
 
@@ -91,9 +98,8 @@ public class PauseMenuController : MonoBehaviour
         }
 
         isLeaving = true;
-        Time.timeScale = previousTimeScale;
-
-        SceneManager.LoadScene("Title");
+        if (!SceneTransition.LoadScene("Title", CancelLeaving))
+            CancelLeaving();
     }
 
     private void OnDestroy()
@@ -103,4 +109,11 @@ public class PauseMenuController : MonoBehaviour
             Time.timeScale = previousTimeScale;
         }
     }
+
+    private void CancelLeaving()
+    {
+        isLeaving = false;
+        pauseStatusText.text = "íƒ€ì´í‹€ë¡œ ì´ë™í•˜ì§€ ëª»í–ˆìŠµë‹ˆë‹¤. ë‹¤ì‹œ ì‹œë„í•´ì£¼ì„¸ìš”.";
+    }
+
 }

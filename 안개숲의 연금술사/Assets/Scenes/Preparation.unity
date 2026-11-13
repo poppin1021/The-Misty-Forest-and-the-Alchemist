@@ -152,8 +152,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -20}
-  m_SizeDelta: {x: 1440, y: 520}
+  m_AnchoredPosition: {x: 0, y: -100}
+  m_SizeDelta: {x: 1440, y: 560}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &135276375
 MonoBehaviour:
@@ -175,8 +175,8 @@ MonoBehaviour:
   m_ChildAlignment: 4
   m_StartCorner: 0
   m_StartAxis: 0
-  m_CellSize: {x: 440, y: 240}
-  m_Spacing: {x: 24, y: 24}
+  m_CellSize: {x: 440, y: 176}
+  m_Spacing: {x: 24, y: 12}
   m_Constraint: 1
   m_ConstraintCount: 3
 --- !u!1 &292641443
@@ -213,8 +213,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -150}
-  m_SizeDelta: {x: 1400, y: 100}
+  m_AnchoredPosition: {x: 0, y: -110}
+  m_SizeDelta: {x: 1400, y: 60}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &292641445
 MonoBehaviour:
@@ -230,13 +230,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uC232\uC5D0\uC11C \uC0AC\uC6A9\uD560 \uC7AC\uB8CC 10\uAC1C\uB97C \uCC59\uACA8\uC8FC\uC138\uC694.\n(\uAC19\uC740\uC7AC\uB8CC\uB294 \uCD5C\uB300 3\uAC1C \uC120\uD0DD\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.)"
+  m_text: "100코인으로 탐사에 사용할 재료를 구매하세요.\n소식에 따라 가격과 구매 한도가 달라집니다."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: fa57742bbd06c244c9002fbe27ee6150, type: 2}
   m_sharedMaterial: {fileID: -7143935003092677547, guid: fa57742bbd06c244c9002fbe27ee6150, type: 2}
@@ -263,8 +263,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 28
-  m_fontSizeBase: 28
+  m_fontSize: 26
+  m_fontSizeBase: 26
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -348,6 +348,7 @@ MonoBehaviour:
   ingredientList: {fileID: 135276374}
   cardPrefab: {fileID: 5288778202363416737, guid: 28f5ac4f5201410429b7b50a2564f3e1, type: 3}
   selectionCountText: {fileID: 2059183148}
+  guideText: {fileID: 292641445}
   departButton: {fileID: 1193254210}
   ingredientSprites:
   - {fileID: -3255352531350015652, guid: 52caf5992a794a642a6d60bf88dbabd9, type: 3}
@@ -356,6 +357,9 @@ MonoBehaviour:
   - {fileID: 2011239052503746124, guid: 52caf5992a794a642a6d60bf88dbabd9, type: 3}
   - {fileID: 219982049424350787, guid: 52caf5992a794a642a6d60bf88dbabd9, type: 3}
   - {fileID: -8660398443613573750, guid: 52caf5992a794a642a6d60bf88dbabd9, type: 3}
+  - {fileID: 2031280438980532934, guid: 52caf5992a794a642a6d60bf88dbabd9, type: 3}
+  - {fileID: 4839167791808775495, guid: 52caf5992a794a642a6d60bf88dbabd9, type: 3}
+  - {fileID: -5523148964240799235, guid: 52caf5992a794a642a6d60bf88dbabd9, type: 3}
 --- !u!4 &458802916
 Transform:
   m_ObjectHideFlags: 0
@@ -651,8 +655,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -60}
-  m_SizeDelta: {x: 1200, y: 80}
+  m_AnchoredPosition: {x: 0, y: -35}
+  m_SizeDelta: {x: 1200, y: 70}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1104013438
 MonoBehaviour:
@@ -668,13 +672,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uC232\uC73C\uB85C \uB5A0\uB0A0 \uC900\uBE44"
+  m_text: "출발 전 재료 상점"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: fa57742bbd06c244c9002fbe27ee6150, type: 2}
   m_sharedMaterial: {fileID: -7143935003092677547, guid: fa57742bbd06c244c9002fbe27ee6150, type: 2}
@@ -701,8 +705,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 48
-  m_fontSizeBase: 48
+  m_fontSize: 44
+  m_fontSizeBase: 44
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -790,8 +794,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: 60}
-  m_SizeDelta: {x: 360, y: 80}
+  m_AnchoredPosition: {x: 0, y: 40}
+  m_SizeDelta: {x: 360, y: 70}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &1193254210
 MonoBehaviour:
@@ -932,7 +936,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uC232\uC73C\uB85C \uCD9C\uBC1C"
+  m_text: "구매하고 출발"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: fa57742bbd06c244c9002fbe27ee6150, type: 2}
   m_sharedMaterial: {fileID: -7143935003092677547, guid: fa57742bbd06c244c9002fbe27ee6150, type: 2}
@@ -1154,8 +1158,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -240}
-  m_SizeDelta: {x: 600, y: 50}
+  m_AnchoredPosition: {x: 0, y: -180}
+  m_SizeDelta: {x: 1200, y: 50}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &2059183148
 MonoBehaviour:
@@ -1171,13 +1175,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uC120\uD0DD\uD55C \uC7AC\uB8CC 0 / 10"
+  m_text: "남은 코인 100 / 100   |   장바구니 0개"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: fa57742bbd06c244c9002fbe27ee6150, type: 2}
   m_sharedMaterial: {fileID: -7143935003092677547, guid: fa57742bbd06c244c9002fbe27ee6150, type: 2}
@@ -1204,8 +1208,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 32
-  m_fontSizeBase: 32
+  m_fontSize: 30
+  m_fontSizeBase: 30
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

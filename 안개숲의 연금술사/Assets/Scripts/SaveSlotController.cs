@@ -1,15 +1,15 @@
-using TMPro;
+ï»¿using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class SaveSlotController : MonoBehaviour
 {
-    [Header("½½·Ô ¼ø¼­´ë·Î ¿¬°á")]
+    [Header("ìŠ¬ë¡¯ ìˆœì„œëŒ€ë¡œ ì—°ê²°")]
     [SerializeField] private Button[] slotButtons = new Button[3];
     [SerializeField] private Button[] deleteButtons = new Button[3];
 
-    [Header("»èÁ¦ È®ÀÎ Ã¢")]
+    [Header("ì‚­ì œ í™•ì¸ ì°½")]
     [SerializeField] private GameObject deleteConfirmPanel;
     [SerializeField] private TMP_Text deleteMessageText;
     [SerializeField] private Button confirmDeleteButton;
@@ -18,7 +18,7 @@ public class SaveSlotController : MonoBehaviour
     private bool isLoading;
     private int pendingDeleteSlot;
 
-    // ¹öÆ° ÀÌº¥Æ®´Â ¿©±â¼­ ÇÑ ¹ø¸¸ ¿¬°áÇÑ´Ù.
+    // ë²„íŠ¼ ì´ë²¤íŠ¸ëŠ” ì—¬ê¸°ì„œ í•œ ë²ˆë§Œ ì—°ê²°í•œë‹¤.
     private void Awake()
     {
         for (int i = 0; i < 3; i++)
@@ -59,7 +59,7 @@ public class SaveSlotController : MonoBehaviour
         }
     }
 
-    // ÀúÀå »óÅÂ¿¡ µû¶ó ½½·Ô ¹®±¸¿Í ¹öÆ° »óÅÂ¸¦ °»½ÅÇÑ´Ù.
+    // ì €ì¥ ìƒíƒœì— ë”°ë¼ ìŠ¬ë¡¯ ë¬¸êµ¬ì™€ ë²„íŠ¼ ìƒíƒœë¥¼ ê°±ì‹ í•œë‹¤.
     private void RefreshSlots()
     {
         bool isConfirming = pendingDeleteSlot != 0;
@@ -102,25 +102,25 @@ public class SaveSlotController : MonoBehaviour
             if (!hasSave)
             {
                 buttonText.text =
-                    "½½·Ô " + slotNumber + "\n»õ·Î ½ÃÀÛÇÏ±â";
+                    "ìŠ¬ë¡¯ " + slotNumber + "\nìƒˆë¡œ ì‹œì‘í•˜ê¸°";
             }
             else if (data != null)
             {
                 buttonText.text =
-                    "½½·Ô " + slotNumber
-                    + "\nÀÌ¾îÇÏ±â"
+                    "ìŠ¬ë¡¯ " + slotNumber
+                    + "\nì´ì–´í•˜ê¸°"
                     + "\nHP " + data.playerHP
                     + " / " + data.playerMaxHP;
             }
             else
             {
                 buttonText.text =
-                    "½½·Ô " + slotNumber + "\nºÒ·¯¿À±â ½ÇÆĞ";
+                    "ìŠ¬ë¡¯ " + slotNumber + "\në¶ˆëŸ¬ì˜¤ê¸° ì‹¤íŒ¨";
             }
         }
     }
 
-    // »èÁ¦ÇÒ ½½·ÔÀ» ±â¾ïÇÏ°í È®ÀÎ Ã¢À» ¿¬´Ù.
+    // ì‚­ì œí•  ìŠ¬ë¡¯ì„ ê¸°ì–µí•˜ê³  í™•ì¸ ì°½ì„ ì—°ë‹¤.
     private void RequestDelete(int slotNumber)
     {
         if (isLoading
@@ -133,8 +133,8 @@ public class SaveSlotController : MonoBehaviour
         pendingDeleteSlot = slotNumber;
 
         deleteMessageText.text =
-            "½½·Ô " + slotNumber + "ÀÇ ÀúÀå µ¥ÀÌÅÍ¸¦ »èÁ¦ÇÒ±î¿ä?"
-            + "\n»èÁ¦ÇÑ µ¥ÀÌÅÍ´Â º¹±¸ÇÒ ¼ö ¾ø½À´Ï´Ù.";
+            "ìŠ¬ë¡¯ " + slotNumber + "ì˜ ì €ì¥ ë°ì´í„°ë¥¼ ì‚­ì œí• ê¹Œìš”?"
+            + "\nì‚­ì œí•œ ë°ì´í„°ëŠ” ë³µêµ¬í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.";
 
         confirmDeleteButton.interactable = true;
 
@@ -144,7 +144,7 @@ public class SaveSlotController : MonoBehaviour
         RefreshSlots();
     }
 
-    // È®ÀÎ ¹öÆ°À» ´­·¶À» ¶§¸¸ ½ÇÁ¦ ÆÄÀÏÀ» »èÁ¦ÇÑ´Ù.
+    // í™•ì¸ ë²„íŠ¼ì„ ëˆŒë €ì„ ë•Œë§Œ ì‹¤ì œ íŒŒì¼ì„ ì‚­ì œí•œë‹¤.
     private void ConfirmDelete()
     {
         if (isLoading
@@ -159,7 +159,7 @@ public class SaveSlotController : MonoBehaviour
         if (!SaveSystem.Delete(slotNumber))
         {
             deleteMessageText.text =
-                "»èÁ¦ÇÏÁö ¸øÇß½À´Ï´Ù.\n´Ù½Ã ½ÃµµÇÏ°Å³ª Ãë¼ÒÇØÁÖ¼¼¿ä.";
+                "ì‚­ì œí•˜ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.\në‹¤ì‹œ ì‹œë„í•˜ê±°ë‚˜ ì·¨ì†Œí•´ì£¼ì„¸ìš”.";
             return;
         }
 
@@ -179,7 +179,7 @@ public class SaveSlotController : MonoBehaviour
         RefreshSlots();
     }
 
-    // ºó ½½·ÔÀº »õ °ÔÀÓ, ÀúÀåµÈ ½½·ÔÀº ÀÌ¾îÇÏ±â·Î ÁøÀÔÇÑ´Ù.
+    // ë¹ˆ ìŠ¬ë¡¯ì€ ìƒˆ ê²Œì„, ì €ì¥ëœ ìŠ¬ë¡¯ì€ ì´ì–´í•˜ê¸°ë¡œ ì§„ì…í•œë‹¤.
     private void SelectSlot(int slotNumber)
     {
         if (isLoading || pendingDeleteSlot != 0)
@@ -195,14 +195,14 @@ public class SaveSlotController : MonoBehaviour
 
         if (data == null)
         {
-            Debug.LogError("ÀúÀå µ¥ÀÌÅÍ¸¦ ºÒ·¯¿ÀÁö ¸øÇß½À´Ï´Ù.");
+            Debug.LogError("ì €ì¥ ë°ì´í„°ë¥¼ ë¶ˆëŸ¬ì˜¤ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.");
             return;
         }
 
         if (!Application.CanStreamedLevelBeLoaded(data.sceneName))
         {
             Debug.LogError(
-                "Scene List¿¡ ¾ÀÀ» Ãß°¡ÇØÁÖ¼¼¿ä: " + data.sceneName
+                "Scene Listì— ì”¬ì„ ì¶”ê°€í•´ì£¼ì„¸ìš”: " + data.sceneName
             );
             return;
         }
@@ -215,6 +215,10 @@ public class SaveSlotController : MonoBehaviour
         GameSession.SelectSave(slotNumber, data);
 
         isLoading = true;
-        SceneManager.LoadScene(data.sceneName);
+        if (!SceneTransition.LoadScene(data.sceneName, () => isLoading = false))
+        {
+            isLoading = false;
+            RefreshSlots();
+        }
     }
 }

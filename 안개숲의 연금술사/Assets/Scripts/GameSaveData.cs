@@ -15,6 +15,10 @@ public class GameSaveData
     public int playerMaxHP = 60;
     public int battleNumber = 1;
 
+    // 출발 전 상점의 코인과 가격·재고·장바구니를 보관한다.
+    public int coins = PreparationMarket.StartingCoins;
+    public PreparationShopData preparationShop;
+
     public string[] bagTokens =
 {
     "홍등열매", "홍등열매", "홍등열매",
@@ -37,6 +41,10 @@ public class GameSaveData
     public int enemyMaxHP = 30;
     public int enemyAttackDamage = 8;
     public int enemyWeakTurns = 0;
+    public int enemyVulnerableTurns = 0;
+    public int enemyPoisonStacks = 0;
+    public int enemyBurnStacks = 0;
+    public bool hasAfterheat = false;
 
     // 현재 턴에 남아 있는 재료와 예약된 물약 효과
     public string[] remainingTokens = new string[0];

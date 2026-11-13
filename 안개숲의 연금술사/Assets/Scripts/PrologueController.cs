@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -6,52 +6,52 @@ using UnityEngine.UI;
 
 public class PrologueController : MonoBehaviour
 {
-    [Header("½ºÅä¸® È­¸é")]
+    [Header("ìŠ¤í† ë¦¬ í™”ë©´")]
     [SerializeField] private Image storyImage;
     [SerializeField] private TMP_Text storyText;
     [SerializeField] private TMP_Text pageText;
     [SerializeField] private TMP_Text nextButtonText;
 
-    [Header("ÄÆº° °¡¸²¸·")]
+    [Header("ì»·ë³„ ê°€ë¦¼ë§‰")]
     [SerializeField] private ComicRevealLayer comicRevealLayer;
 
-    [Header("ÆäÀÌÁö ¼ø¼­´ë·Î ÀÌ¹ÌÁö ¿¬°á")]
+    [Header("í˜ì´ì§€ ìˆœì„œëŒ€ë¡œ ì´ë¯¸ì§€ ì—°ê²°")]
     [SerializeField] private Sprite[] storyImages = new Sprite[3];
 
-    [Header("¿¬Ãâ ¼Óµµ")]
+    [Header("ì—°ì¶œ ì†ë„")]
     [SerializeField] private float characterInterval = 0.04f;
     [SerializeField] private float cutRevealDuration = 0.4f;
 
-    // ÆäÀÌÁöº° ÄÆ ¼ø¼­¿Í ÇØ´ç ÄÆÀÇ ¼³¸íÀÌ´Ù.
+    // í˜ì´ì§€ë³„ ì»· ìˆœì„œì™€ í•´ë‹¹ ì»·ì˜ ì„¤ëª…ì´ë‹¤.
     private readonly string[][] storyCuts =
     {
         new[]
         {
-            "½£¿¡¼­ ³»·Á¿Â Â£Àº ¾È°³°¡ ¸¶À»À» µÚµ¤¾ú´Ù.",
+            "ìˆ²ì—ì„œ ë‚´ë ¤ì˜¨ ì§™ì€ ì•ˆê°œê°€ ë§ˆì„ì„ ë’¤ë®ì—ˆë‹¤.",
 
-            "±×³¯ ÀÌÈÄ, ¸¶À» »ç¶÷µéÀº ÇÏ³ªµÑ "
-            + "¿øÀÎ ¸ğ¸¦ º´À» ¾Î±â ½ÃÀÛÇß´Ù."
+            "ê·¸ë‚  ì´í›„, ë§ˆì„ ì‚¬ëŒë“¤ì€ í•˜ë‚˜ë‘˜ "
+            + "ì›ì¸ ëª¨ë¥¼ ë³‘ì„ ì•“ê¸° ì‹œì‘í–ˆë‹¤."
         },
 
         new[]
         {
-            "¾È°³´Â ¾îµğ¿¡¼­ »ı°Ü³µ°í, "
-            + "»ç¶÷µéÀº ¿Ö º´µé±â ½ÃÀÛÇßÀ»±î?",
+            "ì•ˆê°œëŠ” ì–´ë””ì—ì„œ ìƒê²¨ë‚¬ê³ , "
+            + "ì‚¬ëŒë“¤ì€ ì™œ ë³‘ë“¤ê¸° ì‹œì‘í–ˆì„ê¹Œ?",
 
-            "°ß½À ¿¬±İ¼ú»ç´Â ±× ¿øÀÎÀ» Á÷Á¢ È®ÀÎÇÏ±â À§ÇØ "
-            + "¾È°³½£À¸·Î ÇâÇß´Ù.",
+            "ê²¬ìŠµ ì—°ê¸ˆìˆ ì‚¬ëŠ” ê·¸ ì›ì¸ì„ ì§ì ‘ í™•ì¸í•˜ê¸° ìœ„í•´ "
+            + "ì•ˆê°œìˆ²ìœ¼ë¡œ í–¥í–ˆë‹¤.",
 
-            "ÇÏÁö¸¸ ½£¿¡´Â ¾È°³ÀÇ ¿µÇâÀ» ¹Ş¾Æ "
-            + "»ç³ª¿öÁø Áü½ÂµéÀÌ µ¹¾Æ´Ù´Ï°í ÀÖ¾ú´Ù."
+            "í•˜ì§€ë§Œ ìˆ²ì—ëŠ” ì•ˆê°œì˜ ì˜í–¥ì„ ë°›ì•„ "
+            + "ì‚¬ë‚˜ì›Œì§„ ì§ìŠ¹ë“¤ì´ ëŒì•„ë‹¤ë‹ˆê³  ìˆì—ˆë‹¤."
         },
 
         new[]
         {
-            "¾È°³ÀÇ ±Ù¿øÀ» Ã£À¸·Á¸é ¸ÕÀú ½£¿¡¼­ »ì¾Æ³²¾Æ¾ß ÇÑ´Ù.\n"
-            + "¿¬±İ¼ú»ç´Â À§Çè¿¡ ´ëºñÇØ °¡¹æÀ» ÆîÃÆ´Ù.",
+            "ì•ˆê°œì˜ ê·¼ì›ì„ ì°¾ìœ¼ë ¤ë©´ ë¨¼ì € ìˆ²ì—ì„œ ì‚´ì•„ë‚¨ì•„ì•¼ í•œë‹¤.\n"
+            + "ì—°ê¸ˆìˆ ì‚¬ëŠ” ìœ„í—˜ì— ëŒ€ë¹„í•´ ê°€ë°©ì„ í¼ì³¤ë‹¤.",
 
-            "Ãâ¹ßÇÏ±â Àü¿¡, "
-            + "¹°¾à Á¦Á¶¿¡ »ç¿ëÇÒ Àç·á ¿­ °³¸¦ Ã¬±âÀÚ."
+            "ì¶œë°œí•˜ê¸° ì „ì—, "
+            + "ë§ˆì„ ìƒì ì—ì„œ íƒì‚¬ì— í•„ìš”í•œ ì¬ë£Œë¥¼ ì¤€ë¹„í•˜ì."
         }
     };
 
@@ -68,7 +68,7 @@ public class PrologueController : MonoBehaviour
         if (comicRevealLayer == null)
         {
             Debug.LogError(
-                "PrologueManagerÀÇ Comic Reveal Layer¸¦ ¿¬°áÇØÁÖ¼¼¿ä."
+                "PrologueManagerì˜ Comic Reveal Layerë¥¼ ì—°ê²°í•´ì£¼ì„¸ìš”."
             );
             enabled = false;
             return;
@@ -77,7 +77,7 @@ public class PrologueController : MonoBehaviour
         ShowPage();
     }
 
-    // ÆäÀÌÁö¸¦ ¹Ù²Ù¸é ¸ğµç ÄÆÀ» °¡¸° µÚ Ã¹ ÄÆºÎÅÍ ½ÃÀÛÇÑ´Ù.
+    // í˜ì´ì§€ë¥¼ ë°”ê¾¸ë©´ ëª¨ë“  ì»·ì„ ê°€ë¦° ë’¤ ì²« ì»·ë¶€í„° ì‹œì‘í•œë‹¤.
     private void ShowPage()
     {
         StopAnimation();
@@ -111,7 +111,7 @@ public class PrologueController : MonoBehaviour
         animationRoutine = StartCoroutine(RevealAndType());
     }
 
-    // ÇöÀç ÄÆÀÇ °¡¸²¸·À» °È¾î³»¸é¼­ ±ÛÀÚ¸¦ ¼ø¼­´ë·Î Ç¥½ÃÇÑ´Ù.
+    // í˜„ì¬ ì»·ì˜ ê°€ë¦¼ë§‰ì„ ê±·ì–´ë‚´ë©´ì„œ ê¸€ìë¥¼ ìˆœì„œëŒ€ë¡œ í‘œì‹œí•œë‹¤.
     private IEnumerator RevealAndType()
     {
         int characterCount = storyText.textInfo.characterCount;
@@ -157,7 +157,7 @@ public class PrologueController : MonoBehaviour
         UpdateNextButtonText();
     }
 
-    // ¿¬Ãâ Áß Å¬¸¯Àº ÇöÀç ÄÆ ¿Ï¼º, ¿Ï·á ÈÄ Å¬¸¯Àº ´ÙÀ½ ÄÆ ÀÌµ¿ÀÌ´Ù.
+    // ì—°ì¶œ ì¤‘ í´ë¦­ì€ í˜„ì¬ ì»· ì™„ì„±, ì™„ë£Œ í›„ í´ë¦­ì€ ë‹¤ìŒ ì»· ì´ë™ì´ë‹¤.
     public void NextPage()
     {
         if (isLeaving)
@@ -202,7 +202,7 @@ public class PrologueController : MonoBehaviour
     {
         if (isBusy)
         {
-            nextButtonText.text = "¹Ù·Î º¸±â";
+            nextButtonText.text = "ë°”ë¡œ ë³´ê¸°";
             return;
         }
 
@@ -214,19 +214,19 @@ public class PrologueController : MonoBehaviour
 
         if (!isLastCut)
         {
-            nextButtonText.text = "´ÙÀ½ ÄÆ";
+            nextButtonText.text = "ë‹¤ìŒ ì»·";
         }
         else if (!isLastPage)
         {
-            nextButtonText.text = "´ÙÀ½ ÆäÀÌÁö";
+            nextButtonText.text = "ë‹¤ìŒ í˜ì´ì§€";
         }
         else
         {
-            nextButtonText.text = "Àç·á ÁØºñÇÏ±â";
+            nextButtonText.text = "ìƒì ìœ¼ë¡œ";
         }
     }
 
-    // ½ºÅä¸® ¿Ï·á ¶Ç´Â °Ç³Ê¶Ù±â ÈÄ Àç·á ÁØºñ È­¸éÀ¸·Î ÀÌµ¿ÇÑ´Ù.
+    // ìŠ¤í† ë¦¬ ì™„ë£Œ ë˜ëŠ” ê±´ë„ˆë›°ê¸° í›„ ì¬ë£Œ ì¤€ë¹„ í™”ë©´ìœ¼ë¡œ ì´ë™í•œë‹¤.
     public void FinishPrologue()
     {
         if (isLeaving)
@@ -237,7 +237,7 @@ public class PrologueController : MonoBehaviour
         if (!Application.CanStreamedLevelBeLoaded("Preparation"))
         {
             Debug.LogError(
-                "Scene List¿¡ Preparation ¾ÀÀ» Ãß°¡ÇØÁÖ¼¼¿ä."
+                "Scene Listì— Preparation ì”¬ì„ ì¶”ê°€í•´ì£¼ì„¸ìš”."
             );
             return;
         }
@@ -248,7 +248,7 @@ public class PrologueController : MonoBehaviour
         if (slotNumber < 1 || slotNumber > 3 || currentSave == null)
         {
             Debug.LogError(
-                "Title ¾À¿¡¼­ ºó ½½·ÔÀ» ¼±ÅÃÇÑ µÚ Å×½ºÆ®ÇØÁÖ¼¼¿ä."
+                "Title ì”¬ì—ì„œ ë¹ˆ ìŠ¬ë¡¯ì„ ì„ íƒí•œ ë’¤ í…ŒìŠ¤íŠ¸í•´ì£¼ì„¸ìš”."
             );
             return;
         }
@@ -272,7 +272,8 @@ public class PrologueController : MonoBehaviour
         isLeaving = true;
         StopAnimation();
 
-        SceneManager.LoadScene("Preparation");
+        if (!SceneTransition.LoadScene("Preparation", () => isLeaving = false))
+            isLeaving = false;
     }
 
     private void StopAnimation()
